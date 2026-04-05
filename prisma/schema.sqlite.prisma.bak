@@ -1,37 +1,33 @@
-// This is your Prisma schema file for SUPABASE (PostgreSQL) production
-// To use: set DATABASE_URL to your Supabase connection string
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model UserProfile {
   id                    String   @id @default(cuid())
   userId                String   @unique
   name                  String
-  gender                String   @default("preferNotToSay")
+  gender                String   @default("preferNotToSay") // male/female/nonBinary/preferNotToSay
   age                   Int?
   height                String?
-  bodyType              String   @default("average")
-  communicationStyle    String   @default("thoughtful")
-  humorStyle            String   @default("warm")
-  loveLanguage          String   @default("qualityTime")
+  bodyType              String   @default("average") // slim/average/athletic/plusSize
+  communicationStyle    String   @default("thoughtful") // direct/playful/introverted/thoughtful
+  humorStyle            String   @default("warm") // sarcastic/witty/warm/dry
+  loveLanguage          String   @default("qualityTime") // words/acts/qualityTime/gifts
   dealBreakers          String   @default("")
   interests             String   @default("")
-  datingGoals           String   @default("notSure")
-  budgetRange           String   @default("moderate")
-  preferredDateSetting  String   @default("coffee")
+  datingGoals           String   @default("notSure") // casual/relationship/marriage/notSure
+  budgetRange           String   @default("moderate") // budget/moderate/premium
+  preferredDateSetting  String   @default("coffee") // quietRestaurant/activity/outdoors/coffee/casual
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
-
-  dates         Date[]
-  subscription  Subscription?
 }
 
 model Date {
@@ -43,47 +39,38 @@ model Date {
   occasionType   String   @default("firstDate")
   dateNumber     Int      @default(1)
   location       String   @default("")
-  status         String   @default("planned")
+  status         String   @default("planned") // planned/completed/cancelled
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  user             UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  compatibilityReport CompatibilityReport?
-  datePlan         DatePlan?
-  postDateDebrief  PostDateDebrief?
 }
 
 model CompatibilityReport {
-  id               String   @id @default(cuid())
-  dateId           String   @unique
-  score            Int
-  alignmentAreas   String   @default("")
-  frictionPoints   String   @default("")
-  talkingPoints    String   @default("")
-  topicsToAvoid    String   @default("")
-  compliments      String   @default("")
+  id              String   @id @default(cuid())
+  dateId          String
+  score           Int
+  alignmentAreas  String   @default("")
+  frictionPoints  String   @default("")
+  talkingPoints   String   @default("")
+  topicsToAvoid   String   @default("")
+  compliments     String   @default("")
   conversationSteer String @default("")
-  createdAt        DateTime @default(now())
-
-  date Date @relation(fields: [dateId], references: [id], onDelete: Cascade)
+  createdAt       DateTime @default(now())
 }
 
 model DatePlan {
   id               String   @id @default(cuid())
-  dateId           String   @unique
+  dateId           String
   venueName        String
   venueDescription String
   timingSuggestion String
   outfitDescription String
   budgetEstimate   String
   createdAt        DateTime @default(now())
-
-  date Date @relation(fields: [dateId], references: [id], onDelete: Cascade)
 }
 
 model PostDateDebrief {
   id              String   @id @default(cuid())
-  dateId          String   @unique
+  dateId          String
   rating          Int
   whatWentWell    String   @default("")
   whatWasAwkward  String   @default("")
@@ -91,19 +78,15 @@ model PostDateDebrief {
   aiAnalysis      String   @default("")
   followUpMessage String   @default("")
   createdAt       DateTime @default(now())
-
-  date Date @relation(fields: [dateId], references: [id], onDelete: Cascade)
 }
 
 model Subscription {
   id                       String   @id @default(cuid())
   userId                   String   @unique
-  plan                     String   @default("free")
+  plan                     String   @default("free") // free/pro/vip
   datesThisMonth           Int      @default(0)
   lastResetAt              DateTime @default(now())
   razorpaySubscriptionId   String?
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
-
-  user UserProfile? @relation(fields: [userId], references: [userId], onDelete: Cascade)
 }
