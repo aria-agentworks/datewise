@@ -1,7 +1,7 @@
 'use client'
 import { create } from 'zustand'
 
-export type View = 'landing' | 'profile' | 'newDate' | 'dateDetail' | 'dashboard' | 'debrief' | 'pricing'
+export type View = 'landing' | 'profile' | 'newDate' | 'dateDetail' | 'dashboard' | 'debrief' | 'pricing' | 'signIn' | 'signUp'
 
 interface AppState {
   currentView: View

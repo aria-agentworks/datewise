@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { useAppStore } from '@/lib/store'
+import { usePWA } from '@/hooks/use-pwa'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,8 +13,9 @@ import {
   Heart,
   Clock,
   User,
-  Loader2,
   Sparkles,
+  Download,
+  Crown,
 } from 'lucide-react'
 
 export default function DashboardView() {
@@ -22,7 +23,9 @@ export default function DashboardView() {
   const setSelectedDateId = useAppStore((s) => s.setSelectedDateId)
   const [dates, setDates] = useState<any[]>([])
   const [profile, setProfile] = useState<any>(null)
+  const [subscription, setSubscription] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const { canInstall, promptInstall } = usePWA()
 
   useEffect(() => {
     async function loadData() {
@@ -35,6 +38,7 @@ export default function DashboardView() {
         const profileData = await profileRes.json()
         setDates(datesData || [])
         setProfile(profileData)
+        setSubscription(profileData?.subscription || null)
       } catch (e) {
         console.error(e)
       } finally {
@@ -59,9 +63,9 @@ export default function DashboardView() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'completed': return '✅ Completed'
-      case 'cancelled': return '❌ Cancelled'
-      default: return '📅 Planned'
+      case 'completed': return 'Completed'
+      case 'cancelled': return 'Cancelled'
+      default: return 'Planned'
     }
   }
 
@@ -88,23 +92,46 @@ export default function DashboardView() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {profile ? `Hey, ${profile.name} 👋` : 'Your Dashboard'}
-            </h1>
-            <p className="text-gray-500 text-sm mt-1">
-              {dates.length === 0
-                ? 'No dates planned yet. Let\'s change that!'
-                : `${dates.length} date${dates.length !== 1 ? 's' : ''} planned`}
-            </p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {profile?.name ? `Hey, ${profile.name}` : 'Your Dashboard'}
+              </h1>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-gray-500 text-sm">
+                  {dates.length === 0
+                    ? 'No dates planned yet. Let\'s change that!'
+                    : `${dates.length} date${dates.length !== 1 ? 's' : ''} planned`}
+                </p>
+                {subscription?.plan && subscription.plan !== 'free' && (
+                  <Badge className="bg-gradient-to-r from-rose-500 to-pink-600 text-white border-0 text-xs px-2 py-0.5">
+                    <Crown className="w-3 h-3 mr-1" />
+                    {subscription.plan.toUpperCase()}
+                  </Badge>
+                )}
+              </div>
+            </div>
           </div>
-          <Button
-            onClick={() => setView('newDate')}
-            className="bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-full shadow-lg shadow-rose-200"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Date
-          </Button>
+          <div className="flex items-center gap-2">
+            {canInstall && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={promptInstall}
+                className="rounded-full text-xs"
+              >
+                <Download className="w-3.5 h-3.5 mr-1" />
+                Install
+              </Button>
+            )}
+            <Button
+              onClick={() => setView('newDate')}
+              className="bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-full shadow-lg shadow-rose-200"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              New Date
+            </Button>
+          </div>
         </div>
 
         {/* Stats Cards */}

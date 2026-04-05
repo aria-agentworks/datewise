@@ -28,19 +28,86 @@ import {
   CalendarCheck,
   Gem,
   Handshake,
+  LogIn,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export default function LandingView() {
   const setView = useAppStore((s) => s.setView)
 
+  const handleGetStarted = () => {
+    setView('signUp')
+  }
+
+  const handleUpgrade = (plan: 'pro' | 'vip') => {
+    openRazorpay(plan)
+  }
+
+  const openRazorpay = (plan: 'pro' | 'vip') => {
+    // Create order and open Razorpay checkout
+    fetch('/api/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.error) {
+          alert(data.error)
+          return
+        }
+        const options = {
+          key: data.key,
+          amount: data.amount,
+          currency: data.currency,
+          name: 'DateWise',
+          description: `${plan === 'pro' ? 'Pro' : 'VIP'} Plan - Monthly`,
+          order_id: data.orderId,
+          handler: function (response: any) {
+            fetch('/api/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                plan: data.plan,
+              }),
+            })
+              .then((r) => r.json())
+              .then((result) => {
+                if (result.success) {
+                  setView('dashboard')
+                }
+              })
+          },
+          prefill: {
+            name: '',
+            email: '',
+          },
+          theme: {
+            color: '#f43f5e',
+          },
+        }
+        const RazorpayClass = (window as unknown as Record<string, unknown>).Razorpay as new (opts: Record<string, unknown>) => { open: () => void }
+        const rzp = new RazorpayClass(options)
+        rzp.open()
+      })
+      .catch(() => {
+        alert('Failed to initiate payment. Please try again.')
+      })
+  }
+
   return (
     <div className="view-enter min-h-screen">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50" />
-        <div className="absolute inset-0 opacity-30">
-          <img src="/hero-bg.png" alt="" className="w-full h-full object-cover" />
+        {/* Animated gradient blobs */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-rose-200/40 to-pink-300/30 rounded-full blur-3xl animate-[blob1_8s_ease-in-out_infinite]" />
+          <div className="absolute top-20 right-0 w-80 h-80 bg-gradient-to-br from-pink-200/30 to-fuchsia-200/20 rounded-full blur-3xl animate-[blob2_10s_ease-in-out_infinite]" />
+          <div className="absolute bottom-0 left-1/3 w-72 h-72 bg-gradient-to-br from-orange-200/30 to-rose-200/20 rounded-full blur-3xl animate-[blob3_12s_ease-in-out_infinite]" />
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/40 to-white" />
 
@@ -90,7 +157,7 @@ export default function LandingView() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 size="lg"
-                onClick={() => setView('profile')}
+                onClick={handleGetStarted}
                 className="bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white shadow-lg shadow-rose-200 text-base px-8 h-12 rounded-full"
               >
                 <Heart className="mr-2 w-4 h-4" />
@@ -100,11 +167,11 @@ export default function LandingView() {
               <Button
                 variant="outline"
                 size="lg"
-                onClick={() => setView('pricing')}
+                onClick={() => setView('signIn')}
                 className="rounded-full border-gray-300 text-gray-700 hover:bg-rose-50 text-base px-8 h-12"
               >
-                <Star className="mr-2 w-4 h-4" />
-                View Pricing
+                <LogIn className="mr-2 w-4 h-4" />
+                Sign In
               </Button>
             </div>
           </motion.div>
@@ -257,7 +324,7 @@ export default function LandingView() {
                   <span className="inline-block text-xs font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full mb-4 uppercase tracking-wider">
                     Our role
                   </span>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Preparation & Execution</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Preparation &amp; Execution</h3>
                   <p className="text-gray-500 leading-relaxed mb-5">
                     We don&apos;t guarantee love — nobody can. But we guarantee you&apos;ll walk into every date prepared, confident, and ready to put your best foot forward. The rest is up to you.
                   </p>
@@ -568,13 +635,13 @@ export default function LandingView() {
                     <h3 className="text-lg font-semibold text-gray-900">Free</h3>
                   </div>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-4xl font-bold text-gray-900">$0</span>
+                    <span className="text-4xl font-bold text-gray-900">₹0</span>
                     <span className="text-gray-500">/month</span>
                   </div>
                   <p className="text-sm text-gray-500 mb-6">Perfect for getting started</p>
 
                   <Button
-                    onClick={() => setView('profile')}
+                    onClick={handleGetStarted}
                     variant="outline"
                     className="w-full rounded-full mb-6"
                   >
@@ -616,16 +683,16 @@ export default function LandingView() {
                     <h3 className="text-lg font-semibold text-gray-900">Pro</h3>
                   </div>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-4xl font-bold text-gray-900">$9.99</span>
+                    <span className="text-4xl font-bold text-gray-900">₹299</span>
                     <span className="text-gray-500">/month</span>
                   </div>
                   <p className="text-sm text-gray-500 mb-6">For serious daters</p>
 
                   <Button
-                    onClick={() => setView('profile')}
+                    onClick={() => handleUpgrade('pro')}
                     className="w-full rounded-full mb-6 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white"
                   >
-                    Get Pro
+                    Get Pro — ₹299/mo
                   </Button>
 
                   <ul className="space-y-3">
@@ -660,17 +727,17 @@ export default function LandingView() {
                     <h3 className="text-lg font-semibold text-gray-900">VIP</h3>
                   </div>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-4xl font-bold text-gray-900">$19.99</span>
+                    <span className="text-4xl font-bold text-gray-900">₹599</span>
                     <span className="text-gray-500">/month</span>
                   </div>
                   <p className="text-sm text-gray-500 mb-6">All-access dating companion</p>
 
                   <Button
-                    onClick={() => setView('profile')}
+                    onClick={() => handleUpgrade('vip')}
                     variant="outline"
                     className="w-full rounded-full mb-6"
                   >
-                    Get VIP
+                    Get VIP — ₹599/mo
                   </Button>
 
                   <ul className="space-y-3">
@@ -720,7 +787,7 @@ export default function LandingView() {
           </p>
           <Button
             size="lg"
-            onClick={() => setView('profile')}
+            onClick={handleGetStarted}
             className="bg-white text-rose-600 hover:bg-rose-50 shadow-lg text-base px-8 h-12 rounded-full font-semibold"
           >
             <Heart className="mr-2 w-4 h-4" />

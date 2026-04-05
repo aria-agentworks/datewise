@@ -1,11 +1,23 @@
 import ZAI from 'z-ai-web-dev-sdk'
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     const { dateId, dateData, rating, whatWentWell, whatWasAwkward, surprises } = body
+
+    // Verify date ownership
+    const date = await db.date.findUnique({ where: { id: dateId } })
+    if (!date) {
+      return NextResponse.json({ error: 'Date not found' }, { status: 404 })
+    }
+
+    const userId = await getAuthUser()
+    if (userId && date.userId !== userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
 
     const zai = await ZAI.create()
 
@@ -46,7 +58,6 @@ Provide an insightful analysis and practical advice.`
     const cleanedResult = resultText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const result = JSON.parse(cleanedResult)
 
-    // Save to database
     const debrief = await db.postDateDebrief.create({
       data: {
         dateId: dateId,
@@ -59,7 +70,6 @@ Provide an insightful analysis and practical advice.`
       }
     })
 
-    // Update date status to completed
     await db.date.update({
       where: { id: dateId },
       data: { status: 'completed' }

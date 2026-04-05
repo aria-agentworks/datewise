@@ -29,6 +29,9 @@ import {
   Target,
   PartyPopper,
   MapPin,
+  RefreshCw,
+  Timer,
+  AlertCircle,
 } from 'lucide-react'
 
 interface DateForm {
@@ -50,7 +53,7 @@ interface Compatibility {
   conversationSteer: string[]
 }
 
-interface DatePlan {
+interface DatePlanData {
   venueName: string
   venueDescription: string
   timingSuggestion: string
@@ -80,7 +83,7 @@ export default function NewDateView() {
   const [loading, setLoading] = useState(false)
   const [currentStep, setCurrentStep] = useState<'form' | 'compatibility' | 'plan' | 'talking'>('form')
   const [compatibility, setCompatibility] = useState<Compatibility | null>(null)
-  const [datePlan, setDatePlan] = useState<DatePlan | null>(null)
+  const [datePlan, setDatePlan] = useState<DatePlanData | null>(null)
   const [talkingPoints, setTalkingPoints] = useState<TalkingPoints | null>(null)
   const [savedDateId, setSavedDateId] = useState<string | null>(null)
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -93,6 +96,9 @@ export default function NewDateView() {
     humor: false,
     steering: false,
   })
+  const [error, setError] = useState<string | null>(null)
+  const [timeoutReached, setTimeoutReached] = useState(false)
+  const [checkingSubscription, setCheckingSubscription] = useState(false)
 
   useEffect(() => {
     fetch('/api/profile')
@@ -109,31 +115,76 @@ export default function NewDateView() {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }))
   }
 
+  const checkSubscriptionAndRun = async () => {
+    setCheckingSubscription(true)
+    try {
+      const subRes = await fetch('/api/subscription')
+      const subData = await subRes.json()
+      if (!subData.canCreateDate) {
+        setError('limit_reached')
+        setCheckingSubscription(false)
+        return false
+      }
+    } catch {
+      // If subscription check fails, allow proceeding
+    }
+    setCheckingSubscription(false)
+    return true
+  }
+
+  const startTimeout = () => {
+    setTimeoutReached(false)
+    const timer = setTimeout(() => {
+      setTimeoutReached(true)
+    }, 30000)
+    return () => clearTimeout(timer)
+  }
+
   const runCompatibility = async () => {
     if (!profile) return
+
+    const canProceed = await checkSubscriptionAndRun()
+    if (!canProceed) return
+
     setLoading(true)
+    setError(null)
+    const clearTimer = startTimeout()
     try {
-      // Create date first
       const dateRes = await fetch('/api/dates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, userId: profile.id || 'local-user' }),
+        body: JSON.stringify({ ...form }),
       })
-      const date = await dateRes.json()
-      setSavedDateId(date.id)
+      const dateData = await dateRes.json()
+      if (dateRes.status === 403) {
+        setError('limit_reached')
+        setLoading(false)
+        return
+      }
+      if (!dateRes.ok) {
+        setError(dateData.error || 'Failed to create date')
+        setLoading(false)
+        return
+      }
+      setSavedDateId(dateData.id)
 
-      // Run compatibility
       const compRes = await fetch('/api/compatibility', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dateId: date.id, userProfile: profile, dateInfo: form }),
+        body: JSON.stringify({ dateId: dateData.id, userProfile: profile, dateInfo: form }),
       })
       const compData = await compRes.json()
+      if (!compRes.ok) {
+        setError(compData.error || 'Compatibility analysis failed')
+        setLoading(false)
+        return
+      }
       setCompatibility(compData)
       setCurrentStep('compatibility')
     } catch (e) {
-      console.error(e)
+      setError('Something went wrong. Please try again.')
     } finally {
+      clearTimer()
       setLoading(false)
     }
   }
@@ -141,6 +192,8 @@ export default function NewDateView() {
   const runDatePlan = async () => {
     if (!profile || !savedDateId) return
     setLoading(true)
+    setError(null)
+    const clearTimer = startTimeout()
     try {
       const res = await fetch('/api/date-plan', {
         method: 'POST',
@@ -148,11 +201,17 @@ export default function NewDateView() {
         body: JSON.stringify({ dateId: savedDateId, userProfile: profile, dateInfo: form, compatibility }),
       })
       const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to generate date plan')
+        setLoading(false)
+        return
+      }
       setDatePlan(data)
       setCurrentStep('plan')
-    } catch (e) {
-      console.error(e)
+    } catch {
+      setError('Something went wrong. Please try again.')
     } finally {
+      clearTimer()
       setLoading(false)
     }
   }
@@ -160,6 +219,8 @@ export default function NewDateView() {
   const runTalkingPoints = async () => {
     if (!profile || !savedDateId) return
     setLoading(true)
+    setError(null)
+    const clearTimer = startTimeout()
     try {
       const res = await fetch('/api/talking-points', {
         method: 'POST',
@@ -167,13 +228,35 @@ export default function NewDateView() {
         body: JSON.stringify({ dateId: savedDateId, userProfile: profile, dateInfo: form, compatibility }),
       })
       const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to generate talking points')
+        setLoading(false)
+        return
+      }
       setTalkingPoints(data)
       setCurrentStep('talking')
-    } catch (e) {
-      console.error(e)
+    } catch {
+      setError('Something went wrong. Please try again.')
     } finally {
+      clearTimer()
       setLoading(false)
     }
+  }
+
+  const handleRetry = () => {
+    setError(null)
+    setTimeoutReached(false)
+    if (currentStep === 'form') {
+      runCompatibility()
+    } else if (currentStep === 'compatibility') {
+      runDatePlan()
+    } else if (currentStep === 'plan') {
+      runTalkingPoints()
+    }
+  }
+
+  const handleUpgradeClick = () => {
+    setView('pricing')
   }
 
   const saveToDashboard = () => {
@@ -204,6 +287,60 @@ export default function NewDateView() {
           <h1 className="text-xl font-bold text-gray-900">Plan New Date</h1>
           <div className="w-20" />
         </div>
+
+        {/* Error State: Limit Reached */}
+        {error === 'limit_reached' && (
+          <Card className="border-2 border-rose-300 bg-gradient-to-br from-rose-50 to-pink-50 py-6 mb-4">
+            <CardContent className="px-6 text-center">
+              <div className="w-16 h-16 bg-gradient-to-br from-rose-100 to-pink-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="w-8 h-8 text-rose-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Free Limit Reached</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                You&apos;ve used your free date this month. Upgrade to Pro for unlimited dates and full features!
+              </p>
+              <div className="flex gap-3">
+                <Button onClick={handleUpgradeClick} className="flex-1 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-full">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Upgrade to Pro
+                </Button>
+                <Button variant="outline" onClick={() => setView('dashboard')} className="rounded-full">
+                  Go Back
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Error State: General Error */}
+        {error && error !== 'limit_reached' && (
+          <Card className="border-2 border-amber-300 bg-amber-50 py-6 mb-4">
+            <CardContent className="px-6 text-center">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Oops! Something went wrong</h3>
+              <p className="text-sm text-gray-600 mb-4">{error}</p>
+              <Button onClick={handleRetry} variant="outline" className="rounded-full">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Timeout Warning */}
+        {timeoutReached && loading && (
+          <div className="bg-amber-50 rounded-xl p-4 border border-amber-200 mb-4">
+            <p className="text-sm text-amber-700 text-center flex items-center justify-center gap-2">
+              <Timer className="w-4 h-4" />
+              Taking too long?{' '}
+              <button onClick={() => { setLoading(false); setError(null); setTimeoutReached(false); }} className="underline font-medium">
+                Try again
+              </button>
+            </p>
+          </div>
+        )}
 
         {/* Date Form */}
         {currentStep === 'form' && (
@@ -276,13 +413,13 @@ export default function NewDateView() {
 
             <Button
               onClick={runCompatibility}
-              disabled={loading || !form.dateWithName.trim()}
+              disabled={loading || checkingSubscription || !form.dateWithName.trim()}
               className="w-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-full h-12 text-base"
             >
-              {loading ? (
+              {loading || checkingSubscription ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Analyzing Compatibility...
+                  {checkingSubscription ? 'Checking plan...' : 'Analyzing Compatibility...'}
                 </>
               ) : (
                 <>
@@ -297,7 +434,6 @@ export default function NewDateView() {
         {/* Compatibility Results */}
         {currentStep === 'compatibility' && compatibility && (
           <div className="space-y-4">
-            {/* Score Card */}
             <Card className={`border-0 shadow-lg bg-gradient-to-br ${getScoreBg(compatibility.score)} py-6`}>
               <CardContent className="px-6 text-center">
                 <div className={`text-6xl font-bold ${getScoreColor(compatibility.score)} score-glow mb-2`}>
@@ -312,7 +448,6 @@ export default function NewDateView() {
               </CardContent>
             </Card>
 
-            {/* Alignment Areas */}
             <Card className="border-0 shadow-lg py-4">
               <CardContent className="px-6">
                 <button onClick={() => toggleSection('alignment')} className="flex items-center justify-between w-full">
@@ -334,7 +469,6 @@ export default function NewDateView() {
               </CardContent>
             </Card>
 
-            {/* Friction Points */}
             <Card className="border-0 shadow-lg py-4">
               <CardContent className="px-6">
                 <button onClick={() => toggleSection('friction')} className="flex items-center justify-between w-full">
@@ -356,7 +490,6 @@ export default function NewDateView() {
               </CardContent>
             </Card>
 
-            {/* Compliments */}
             <Card className="border-0 shadow-lg py-4">
               <CardContent className="px-6">
                 <button onClick={() => toggleSection('compliments')} className="flex items-center justify-between w-full">
@@ -371,14 +504,13 @@ export default function NewDateView() {
                 {expandedSections.compliments && (
                   <div className="space-y-2 mt-4">
                     {compatibility.compliments?.map((c, i) => (
-                      <div key={i} className="bg-pink-50 rounded-lg p-3 text-sm text-pink-800 border border-pink-100">"{c}"</div>
+                      <div key={i} className="bg-pink-50 rounded-lg p-3 text-sm text-pink-800 border border-pink-100">&ldquo;{c}&rdquo;</div>
                     ))}
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Topics to Avoid */}
             <Card className="border-0 shadow-lg py-4">
               <CardContent className="px-6">
                 <button onClick={() => toggleSection('topics')} className="flex items-center justify-between w-full">
@@ -490,7 +622,6 @@ export default function NewDateView() {
         {/* Talking Points */}
         {currentStep === 'talking' && talkingPoints && (
           <div className="space-y-4">
-            {/* Icebreakers */}
             <Card className="border-0 shadow-lg py-4">
               <CardContent className="px-6">
                 <button onClick={() => toggleSection('icebreakers')} className="flex items-center justify-between w-full">
@@ -512,7 +643,6 @@ export default function NewDateView() {
               </CardContent>
             </Card>
 
-            {/* Deep Starters */}
             <Card className="border-0 shadow-lg py-4">
               <CardContent className="px-6">
                 <button onClick={() => toggleSection('deep')} className="flex items-center justify-between w-full">
@@ -534,7 +664,6 @@ export default function NewDateView() {
               </CardContent>
             </Card>
 
-            {/* Humor Suggestions */}
             <Card className="border-0 shadow-lg py-4">
               <CardContent className="px-6">
                 <button onClick={() => toggleSection('humor')} className="flex items-center justify-between w-full">
@@ -556,7 +685,6 @@ export default function NewDateView() {
               </CardContent>
             </Card>
 
-            {/* Steering Cues */}
             <Card className="border-0 shadow-lg py-4">
               <CardContent className="px-6">
                 <button onClick={() => toggleSection('steering')} className="flex items-center justify-between w-full">
@@ -589,7 +717,7 @@ export default function NewDateView() {
               onClick={saveToDashboard}
               className="w-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-full h-12 text-base"
             >
-              Save & Go to Dashboard
+              Save &amp; Go to Dashboard
             </Button>
           </div>
         )}

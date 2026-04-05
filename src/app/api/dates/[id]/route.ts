@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 
 export async function GET(
   request: Request,
@@ -7,27 +8,33 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    
+    const userId = await getAuthUser()
+
     const date = await db.date.findUnique({
       where: { id }
     })
-    
+
     if (!date) {
       return NextResponse.json({ error: 'Date not found' }, { status: 404 })
     }
-    
+
+    // Verify ownership if authenticated
+    if (userId && date.userId !== userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
+
     const compatibility = await db.compatibilityReport.findFirst({
       where: { dateId: id }
     })
-    
+
     const plan = await db.datePlan.findFirst({
       where: { dateId: id }
     })
-    
+
     const debrief = await db.postDateDebrief.findFirst({
       where: { dateId: id }
     })
-    
+
     return NextResponse.json({
       date,
       compatibility: compatibility ? {

@@ -1,11 +1,23 @@
 import ZAI from 'z-ai-web-dev-sdk'
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     const { dateId, userProfile, dateInfo, compatibility } = body
+
+    // Verify date ownership
+    const date = await db.date.findUnique({ where: { id: dateId } })
+    if (!date) {
+      return NextResponse.json({ error: 'Date not found' }, { status: 404 })
+    }
+
+    const userId = await getAuthUser()
+    if (userId && date.userId !== userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
 
     const zai = await ZAI.create()
 
@@ -55,7 +67,6 @@ Generate personalized talking points that feel natural and authentic.`
     const cleanedResult = resultText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const result = JSON.parse(cleanedResult)
 
-    // Update the compatibility report with new talking points
     await db.compatibilityReport.updateMany({
       where: { dateId },
       data: {

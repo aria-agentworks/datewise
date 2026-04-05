@@ -7,13 +7,15 @@ import NewDateView from '@/components/views/NewDateView'
 import DashboardView from '@/components/views/DashboardView'
 import DateDetailView from '@/components/views/DateDetailView'
 import DebriefView from '@/components/views/DebriefView'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Home as HomeIcon, LayoutDashboard, PlusCircle } from 'lucide-react'
 
 export default function Home() {
   const currentView = useAppStore((s) => s.currentView)
   const setView = useAppStore((s) => s.setView)
 
-  const showNav = currentView !== 'landing'
+  const showNav = currentView !== 'landing' && currentView !== 'signIn' && currentView !== 'signUp'
 
   return (
     <div className="min-h-screen bg-background">
@@ -60,6 +62,54 @@ export default function Home() {
         {currentView === 'dateDetail' && <DateDetailView />}
         {currentView === 'debrief' && <DebriefView />}
         {currentView === 'pricing' && <LandingView />}
+        {currentView === 'signIn' && (
+          <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 to-pink-50">
+            <Card className="border-0 shadow-xl max-w-md w-full py-8">
+              <CardContent className="px-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <span className="text-2xl font-bold text-white">DW</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+                <p className="text-gray-500 mb-6">Sign in to continue your dating journey</p>
+                <p className="text-sm text-gray-400">
+                  Authentication will be configured with Clerk. Please set your CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY in .env
+                </p>
+                <div className="mt-6 flex flex-col gap-3">
+                  <Button onClick={() => setView('dashboard')} className="w-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-full">
+                    Continue as Guest (Demo)
+                  </Button>
+                  <Button variant="outline" onClick={() => setView('landing')} className="rounded-full">
+                    Back to Home
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        {currentView === 'signUp' && (
+          <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 to-pink-50">
+            <Card className="border-0 shadow-xl max-w-md w-full py-8">
+              <CardContent className="px-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <span className="text-2xl font-bold text-white">DW</span>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h2>
+                <p className="text-gray-500 mb-6">Join DateWise and start dating smarter</p>
+                <p className="text-sm text-gray-400">
+                  Authentication will be configured with Clerk. Please set your CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY in .env
+                </p>
+                <div className="mt-6 flex flex-col gap-3">
+                  <Button onClick={() => setView('profile')} className="w-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white rounded-full">
+                    Continue as Guest (Demo)
+                  </Button>
+                  <Button variant="outline" onClick={() => setView('landing')} className="rounded-full">
+                    Back to Home
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
 
       {/* Mobile Bottom Navigation */}

@@ -12,6 +12,7 @@ datasource db {
 
 model UserProfile {
   id                    String   @id @default(cuid())
+  userId                String   @unique
   name                  String
   gender                String   @default("preferNotToSay") // male/female/nonBinary/preferNotToSay
   age                   Int?
@@ -77,4 +78,15 @@ model PostDateDebrief {
   aiAnalysis      String   @default("")
   followUpMessage String   @default("")
   createdAt       DateTime @default(now())
+}
+
+model Subscription {
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
+  plan                     String   @default("free") // free/pro/vip
+  datesThisMonth           Int      @default(0)
+  lastResetAt              DateTime @default(now())
+  razorpaySubscriptionId   String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 }

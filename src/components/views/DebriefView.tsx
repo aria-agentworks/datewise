@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAppStore } from '@/lib/store'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -16,6 +16,9 @@ import {
   MessageCircle,
   Lightbulb,
   Copy,
+  RefreshCw,
+  AlertTriangle,
+  Timer,
 } from 'lucide-react'
 
 export default function DebriefView() {
@@ -30,6 +33,9 @@ export default function DebriefView() {
   const [loadingData, setLoadingData] = useState(true)
   const [result, setResult] = useState<any>(null)
   const [copied, setCopied] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [timeoutReached, setTimeoutReached] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!selectedDateId) return
@@ -37,13 +43,29 @@ export default function DebriefView() {
     fetch(`/api/dates/${selectedDateId}`)
       .then(r => r.json())
       .then(d => setDateData(d))
-      .catch(console.error)
+      .catch(() => setError('Failed to load date data'))
       .finally(() => setLoadingData(false))
   }, [selectedDateId])
+
+  const startTimeout = useCallback(() => {
+    setTimeoutReached(false)
+    timerRef.current = setTimeout(() => {
+      setTimeoutReached(true)
+    }, 30000)
+  }, [])
+
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
 
   const handleSubmit = async () => {
     if (!selectedDateId || !dateData) return
     setLoading(true)
+    setError(null)
+    startTimeout()
     try {
       const res = await fetch('/api/debrief', {
         method: 'POST',
@@ -58,10 +80,17 @@ export default function DebriefView() {
         }),
       })
       const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Failed to analyze debrief')
+        setLoading(false)
+        clearTimer()
+        return
+      }
       setResult(data)
-    } catch (e) {
-      console.error(e)
+    } catch {
+      setError('Something went wrong. Please try again.')
     } finally {
+      clearTimer()
       setLoading(false)
     }
   }
@@ -99,6 +128,36 @@ export default function DebriefView() {
           <div className="w-20" />
         </div>
 
+        {/* Timeout Warning */}
+        {timeoutReached && loading && (
+          <div className="bg-amber-50 rounded-xl p-4 border border-amber-200 mb-4">
+            <p className="text-sm text-amber-700 text-center flex items-center justify-center gap-2">
+              <Timer className="w-4 h-4" />
+              Taking too long?{' '}
+              <button onClick={() => { setLoading(false); setError(null); setTimeoutReached(false); clearTimer(); }} className="underline font-medium">
+                Try again
+              </button>
+            </p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <Card className="border-2 border-amber-300 bg-amber-50 py-6 mb-4">
+            <CardContent className="px-6 text-center">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <AlertTriangle className="w-6 h-6 text-amber-600" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-1">Oops! Something went wrong</h3>
+              <p className="text-sm text-gray-600 mb-4">{error}</p>
+              <Button onClick={handleSubmit} variant="outline" className="rounded-full">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {!result ? (
           <>
             {/* Date Info */}
@@ -130,11 +189,11 @@ export default function DebriefView() {
                     </button>
                   ))}
                   <span className="ml-2 text-sm text-gray-500">
-                    {rating === 1 && 'Terrible 😞'}
-                    {rating === 2 && 'Not great 😕'}
-                    {rating === 3 && 'It was okay 😐'}
-                    {rating === 4 && 'Pretty good! 😊'}
-                    {rating === 5 && 'Amazing! 🤩'}
+                    {rating === 1 && 'Terrible'}
+                    {rating === 2 && 'Not great'}
+                    {rating === 3 && 'It was okay'}
+                    {rating === 4 && 'Pretty good!'}
+                    {rating === 5 && 'Amazing!'}
                   </span>
                 </div>
               </CardContent>
@@ -144,7 +203,7 @@ export default function DebriefView() {
             <Card className="border-0 shadow-lg py-5 mb-4">
               <CardContent className="px-6 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="well">What went well? ✨</Label>
+                  <Label htmlFor="well">What went well?</Label>
                   <Textarea
                     id="well"
                     placeholder="Great conversation, good chemistry, loved the venue..."
@@ -154,7 +213,7 @@ export default function DebriefView() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="awkward">What was awkward? 😅</Label>
+                  <Label htmlFor="awkward">What was awkward?</Label>
                   <Textarea
                     id="awkward"
                     placeholder="Awkward silences, weird topics, uncomfortable moments..."
@@ -164,7 +223,7 @@ export default function DebriefView() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="surprises">Any surprises? 🤔</Label>
+                  <Label htmlFor="surprises">Any surprises?</Label>
                   <Textarea
                     id="surprises"
                     placeholder="Unexpected topics, surprising things you learned..."

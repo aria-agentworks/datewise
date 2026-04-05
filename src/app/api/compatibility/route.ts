@@ -1,11 +1,23 @@
 import ZAI from 'z-ai-web-dev-sdk'
 import { db } from '@/lib/db'
 import { NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
     const { dateId, userProfile, dateInfo } = body
+
+    // Verify date ownership
+    const date = await db.date.findUnique({ where: { id: dateId } })
+    if (!date) {
+      return NextResponse.json({ error: 'Date not found' }, { status: 404 })
+    }
+
+    const userId = await getAuthUser()
+    if (userId && date.userId !== userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+    }
 
     const zai = await ZAI.create()
 
@@ -57,11 +69,9 @@ Please analyze their compatibility and provide the JSON response.`
     })
 
     const resultText = completion.choices[0]?.message?.content || '{}'
-    // Clean up any markdown code fences
     const cleanedResult = resultText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const result = JSON.parse(cleanedResult)
 
-    // Save to database
     const report = await db.compatibilityReport.create({
       data: {
         dateId: dateId,
