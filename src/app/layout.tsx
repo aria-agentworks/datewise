@@ -15,14 +15,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://ariaagent.agency'),
+  metadataBase: new URL('https://datewise-app.vercel.app'),
   title: 'DateWise — AI Dating Coach | Prepare Smarter, Date Better',
   description: 'AI-powered dating preparation app. Get compatibility analysis, personalized date plans, conversation guides, and post-date coaching. Make every date count.',
   keywords: ['dating coach', 'AI dating', 'dating app', 'date planner', 'compatibility test', 'dating advice', 'conversation starter', 'date preparation'],
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://ariaagent.agency',
+    url: 'https://datewise-app.vercel.app',
     siteName: 'DateWise',
     title: 'DateWise — AI Dating Coach | Prepare Smarter, Date Better',
     description: 'Walk in prepared. Walk out with a connection. AI-powered dating preparation for meaningful dates.',
