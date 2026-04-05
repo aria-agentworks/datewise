@@ -190,3 +190,66 @@ Execute all 7 phases of production hardening, authentication, payments, PWA, SEO
 - Build: Passes successfully
 - Dev server: Running with no errors
 - Backwards compatible: Works in demo/guest mode without Clerk/Razorpay keys
+
+---
+## Task ID: 3 - CEO Post-Build Execution (Bug Fixes + CEO Playbook)
+### Work Task
+Audit the codebase for production blockers, fix critical bugs, and create comprehensive CEO execution document.
+
+### Work Summary
+
+#### Critical Bugs Fixed
+1. **Clerk Theme Bug** (`src/app/layout.tsx`):
+   - Problem: Dark theme from `@clerk/themes` made text white, but background was white = invisible text
+   - Fix: Removed `baseTheme: dark` import, added explicit `colorText: "#111827"` and `colorTextSecondary: "#6b7280"`
+   - Added `text-white` to formButtonPrimary element style
+
+2. **Missing Clerk Route Pages**:
+   - Problem: Middleware referenced `/sign-in(.*)` and `/sign-up(.*)` but no Next.js routes existed for these
+   - Fix: Created `src/app/sign-in/[[...sign-in]]/page.tsx` and `src/app/sign-up/[[...sign-up]]/page.tsx`
+   - Both pages have branded DateWise styling with Clerk SignIn/SignUp components
+
+3. **MetadataBase Warning**:
+   - Problem: OG image wouldn't resolve without metadataBase
+   - Fix: Added `metadataBase: new URL('https://datewise.app')` to metadata
+
+4. **Clerk Loading State**:
+   - Problem: Flash of unauthenticated content while Clerk initializes
+   - Fix: Added `isLoaded` check with branded loading spinner in `src/app/page.tsx`
+
+5. **Razorpay Script Loading**:
+   - Problem: Razorpay checkout.js was referenced via window.Razorpay but never loaded
+   - Fix: Added `<script src="https://checkout.razorpay.com/v1/checkout.js" async />` in layout.tsx
+
+6. **UserButton Sign-Out URL**:
+   - Problem: `afterSignOutUrl=""` redirected to blank
+   - Fix: Changed to `afterSignOutUrl="/"` to redirect to landing page
+
+#### Supabase Preparation
+- Created `prisma/schema.supabase.prisma` — Production-ready PostgreSQL schema with:
+  - Proper `directUrl` for Supabase pooled connections
+  - Foreign key relations (Date → CompatibilityReport, DatePlan, PostDateDebrief)
+  - Cascade delete on related records
+  - Subscription ↔ UserProfile bidirectional relation
+
+#### CEO Execution Document
+- Generated 13-page PDF: `/home/z/my-project/download/DateWise_CEO_Execution_Plan.pdf`
+- Sections: Executive Summary, Technical Status, Deployment Guide, Marketing Strategy, Financial Projections, Timeline, Risk Assessment, Fashion Point Vision, Env Checklist
+- 10 professional tables with data-driven analysis
+
+#### Files Created
+- `src/app/sign-in/[[...sign-in]]/page.tsx` — Clerk sign-in route page
+- `src/app/sign-up/[[...sign-up]]/page.tsx` — Clerk sign-up route page
+- `prisma/schema.supabase.prisma` — Production PostgreSQL schema
+- `src/app/loading.tsx` — App loading spinner
+- `download/DateWise_CEO_Execution_Plan.pdf` — CEO execution playbook (13 pages)
+- `download/generate_ceo_plan.py` — PDF generation script
+
+#### Files Modified
+- `src/app/layout.tsx` — Fixed Clerk theme, added metadataBase, added Razorpay script
+- `src/app/page.tsx` — Added Clerk loading state, fixed UserButton sign-out URL
+
+#### Quality
+- Build: Passes successfully (16 routes including new sign-in/sign-up)
+- ESLint: 0 errors
+- All fixes backward compatible

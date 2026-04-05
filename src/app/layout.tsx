@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ClerkProvider } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://datewise.app'),
   title: 'DateWise — AI Dating Coach | Prepare Smarter, Date Better',
   description: 'AI-powered dating preparation app. Get compatibility analysis, personalized date plans, conversation guides, and post-date coaching. Make every date count.',
   keywords: ['dating coach', 'AI dating', 'dating app', 'date planner', 'compatibility test', 'dating advice', 'conversation starter', 'date preparation'],
@@ -46,15 +46,16 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <ClerkProvider
         appearance={{
-          baseTheme: dark,
           variables: {
             colorPrimary: "#f43f5e",
             colorBackground: "#ffffff",
             colorInputBackground: "#f9fafb",
             borderRadius: "0.75rem",
+            colorText: "#111827",
+            colorTextSecondary: "#6b7280",
           },
           elements: {
-            formButtonPrimary: "bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700",
+            formButtonPrimary: "bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white",
             card: "border-0 shadow-xl",
           },
         }}
@@ -92,6 +93,11 @@ export default function RootLayout({
       >
         {children}
         <Toaster />
+        {/* Razorpay Script */}
+        <script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          async
+        />
       </body>
       </ClerkProvider>
     </html>

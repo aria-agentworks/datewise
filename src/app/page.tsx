@@ -24,6 +24,20 @@ export default function Home() {
 
   const showNav = currentView !== 'landing' && currentView !== 'signIn' && currentView !== 'signUp'
 
+  // Show loading while Clerk initializes
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-rose-50 to-pink-50">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <span className="text-2xl font-bold text-white">DW</span>
+          </div>
+          <p className="text-gray-400 text-sm">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {showNav && (
@@ -36,7 +50,7 @@ export default function Home() {
               DateWise
             </button>
             <div className="flex items-center gap-2">
-              <UserButton afterSignOutUrl="" />
+              <UserButton afterSignOutUrl="/" />
               <div className="flex items-center gap-1">
                 <NavButton
                   icon={<HomeIcon className="w-4 h-4" />}

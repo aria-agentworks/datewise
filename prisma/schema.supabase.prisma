@@ -1,0 +1,108 @@
+// This is your Prisma schema file for SUPABASE (PostgreSQL) production
+// To use: set DATABASE_URL to your Supabase connection string
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // Required for Supabase pooled connections
+}
+
+model UserProfile {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  name                  String
+  gender                String   @default("preferNotToSay")
+  age                   Int?
+  height                String?
+  bodyType              String   @default("average")
+  communicationStyle    String   @default("thoughtful")
+  humorStyle            String   @default("warm")
+  loveLanguage          String   @default("qualityTime")
+  dealBreakers          String   @default("")
+  interests             String   @default("")
+  datingGoals           String   @default("notSure")
+  budgetRange           String   @default("moderate")
+  preferredDateSetting  String   @default("coffee")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  dates         Date[]
+  subscription  Subscription?
+}
+
+model Date {
+  id             String   @id @default(cuid())
+  userId         String
+  dateWithName   String
+  datePlatform   String   @default("")
+  dateBioText    String   @default("")
+  occasionType   String   @default("firstDate")
+  dateNumber     Int      @default(1)
+  location       String   @default("")
+  status         String   @default("planned")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  compatibilityReport CompatibilityReport?
+  datePlan         DatePlan?
+  postDateDebrief  PostDateDebrief?
+}
+
+model CompatibilityReport {
+  id               String   @id @default(cuid())
+  dateId           String   @unique
+  score            Int
+  alignmentAreas   String   @default("")
+  frictionPoints   String   @default("")
+  talkingPoints    String   @default("")
+  topicsToAvoid    String   @default("")
+  compliments      String   @default("")
+  conversationSteer String @default("")
+  createdAt        DateTime @default(now())
+
+  date Date @relation(fields: [dateId], references: [id], onDelete: Cascade)
+}
+
+model DatePlan {
+  id               String   @id @default(cuid())
+  dateId           String   @unique
+  venueName        String
+  venueDescription String
+  timingSuggestion String
+  outfitDescription String
+  budgetEstimate   String
+  createdAt        DateTime @default(now())
+
+  date Date @relation(fields: [dateId], references: [id], onDelete: Cascade)
+}
+
+model PostDateDebrief {
+  id              String   @id @default(cuid())
+  dateId          String   @unique
+  rating          Int
+  whatWentWell    String   @default("")
+  whatWasAwkward  String   @default("")
+  surprises       String   @default("")
+  aiAnalysis      String   @default("")
+  followUpMessage String   @default("")
+  createdAt       DateTime @default(now())
+
+  date Date @relation(fields: [dateId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
+  plan                     String   @default("free")
+  datesThisMonth           Int      @default(0)
+  lastResetAt              DateTime @default(now())
+  razorpaySubscriptionId   String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  user UserProfile? @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
