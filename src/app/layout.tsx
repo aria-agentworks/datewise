@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
+import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +44,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <ClerkProvider
+        appearance={{
+          baseTheme: dark,
+          variables: {
+            colorPrimary: "#f43f5e",
+            colorBackground: "#ffffff",
+            colorInputBackground: "#f9fafb",
+            borderRadius: "0.75rem",
+          },
+          elements: {
+            formButtonPrimary: "bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700",
+            card: "border-0 shadow-xl",
+          },
+        }}
+      >
       <head>
         <meta name="application-name" content="DateWise" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -76,6 +93,7 @@ export default function RootLayout({
         {children}
         <Toaster />
       </body>
+      </ClerkProvider>
     </html>
   );
 }
