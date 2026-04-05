@@ -6,7 +6,7 @@ import { getAuthUser } from '@/lib/auth'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { dateId, userProfile, dateInfo } = body
+    const { dateId, userProfile, dateInfo, lang } = body
 
     // Verify date ownership
     const date = await db.date.findUnique({ where: { id: dateId } })
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   "conversationSteer": ["<cue 1>", "<cue 2>", ...]
 }
 
-Be insightful, specific, and practical. The score should reflect genuine compatibility based on the information provided. Provide 4-6 items for each array. Be encouraging but honest.`
+Be insightful, specific, and practical. The score should reflect genuine compatibility based on the information provided. Provide 4-6 items for each array. Be encouraging but honest.${lang && lang !== 'en' ? ` IMPORTANT: Respond entirely in ${lang}. All text in the JSON values (alignmentAreas, frictionPoints, talkingPoints, topicsToAvoid, compliments, conversationSteer) must be in ${lang}.` : ''}`
 
     const userPrompt = `Analyze compatibility between these two people:
 
@@ -58,7 +58,7 @@ DATE'S INFO:
 - Date Number: ${dateInfo.dateNumber}
 - Location: ${dateInfo.location}
 
-Please analyze their compatibility and provide the JSON response.`
+Please analyze their compatibility and provide the JSON response.${lang && lang !== 'en' ? ` Respond entirely in ${lang}. All JSON values should be in ${lang}.` : ''}`
 
     const completion = await zai.chat.completions.create({
       messages: [

@@ -1,6 +1,7 @@
 'use client'
 
 import { useAppStore } from '@/lib/store'
+import { useTranslation } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -33,12 +34,6 @@ import {
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 
-const PLANS = {
-  free: { display: '$0', price: 0, label: 'Free' },
-  pro:  { display: '$9.99', price: 9.99, label: 'Pro' },
-  vip:  { display: '$19.99', price: 19.99, label: 'VIP' },
-}
-
 // Currency formatting based on user locale
 function useUserCurrency() {
   const [currency, setCurrency] = useState('USD')
@@ -51,9 +46,14 @@ function useUserCurrency() {
         AU: 'AUD', CA: 'CAD', SG: 'SGD', AE: 'AED', JP: 'JPY', BR: 'BRL',
         MX: 'MXN', ZA: 'ZAR', CH: 'CHF', SE: 'SEK', NO: 'NOK',
       }
-      setCurrency(currencyMap[region] || 'USD')
+      // Use requestAnimationFrame to avoid synchronous setState in effect
+      const detected = currencyMap[region] || 'USD'
+      if (detected !== currency) {
+        const handle = requestAnimationFrame(() => setCurrency(detected))
+        return () => cancelAnimationFrame(handle)
+      }
     } catch {
-      setCurrency('USD')
+      // ignore
     }
   }, [])
   return currency
@@ -75,6 +75,7 @@ function formatPrice(usdAmount: number, cur: string): string {
 export default function LandingView() {
   const setView = useAppStore((s) => s.setView)
   const userCurrency = useUserCurrency()
+  const { t } = useTranslation()
 
   const handleGetStarted = () => {
     setView('signUp')
@@ -85,7 +86,6 @@ export default function LandingView() {
   }
 
   const openRazorpay = (plan: 'pro' | 'vip') => {
-    // Create order and open Razorpay checkout
     fetch('/api/create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -144,7 +144,6 @@ export default function LandingView() {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50" />
-        {/* Animated gradient blobs */}
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-rose-200/40 to-pink-300/30 rounded-full blur-3xl animate-[blob1_8s_ease-in-out_infinite]" />
           <div className="absolute top-20 right-0 w-80 h-80 bg-gradient-to-br from-pink-200/30 to-fuchsia-200/20 rounded-full blur-3xl animate-[blob2_10s_ease-in-out_infinite]" />
@@ -152,7 +151,6 @@ export default function LandingView() {
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/40 to-white" />
 
-        {/* Floating decorative icons */}
         <div className="absolute top-20 left-[10%] opacity-20 animate-pulse">
           <Heart className="w-10 h-10 text-rose-400" />
         </div>
@@ -180,19 +178,18 @@ export default function LandingView() {
           >
             <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm bg-rose-100 text-rose-700 border-rose-200">
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              AI-Powered Dating Coach
+              {t.landing.heroBadge}
             </Badge>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-6">
-              Know Before{' '}
+              {t.landing.heroTitle1}{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-600">
-                You Go
+                {t.landing.heroTitleHighlight}
               </span>
             </h1>
 
             <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed">
-              AI-powered dating preparation that helps you make real connections.
-              Get compatibility insights, personalized date plans, and conversation guides — all before your date.
+              {t.landing.heroSubtitle}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -202,7 +199,7 @@ export default function LandingView() {
                 className="bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white shadow-lg shadow-rose-200 text-base px-8 h-12 rounded-full"
               >
                 <Heart className="mr-2 w-4 h-4" />
-                Get Started Free
+                {t.landing.getStartedFree}
                 <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
               <Button
@@ -212,7 +209,7 @@ export default function LandingView() {
                 className="rounded-full border-gray-300 text-gray-700 hover:bg-rose-50 text-base px-8 h-12"
               >
                 <LogIn className="mr-2 w-4 h-4" />
-                Sign In
+                {t.landing.signIn}
               </Button>
             </div>
           </motion.div>
@@ -224,10 +221,10 @@ export default function LandingView() {
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {[
-              { icon: CalendarCheck, value: '10,000+', label: 'Dates Planned' },
-              { icon: Heart, value: '92%', label: 'Felt More Confident' },
-              { icon: TrendingUp, value: '3.2x', label: 'More Second Dates' },
-              { icon: Users, value: '50,000+', label: 'Happy Users' },
+              { icon: CalendarCheck, value: '10,000+', label: t.landing.statDatesPlanned },
+              { icon: Heart, value: '92%', label: t.landing.statFeltConfident },
+              { icon: TrendingUp, value: '3.2x', label: t.landing.statMoreSecondDates },
+              { icon: Users, value: '50,000+', label: t.landing.statHappyUsers },
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -260,13 +257,13 @@ export default function LandingView() {
           >
             <Badge variant="secondary" className="mb-4 px-4 py-1.5 text-sm bg-amber-100 text-amber-700 border-amber-200">
               <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
-              The DateWise Promise
+              {t.landing.promiseBadge}
             </Badge>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Every Date Has Two Outcomes.
+              {t.landing.promiseTitle1}
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-pink-600">
-                Both Are Wins.
+                {t.landing.promiseTitleHighlight}
               </span>
             </h2>
           </motion.div>
@@ -286,21 +283,21 @@ export default function LandingView() {
                     <Flame className="w-8 h-8 text-orange-500" />
                   </div>
                   <span className="inline-block text-xs font-bold text-orange-500 bg-orange-50 px-3 py-1 rounded-full mb-4 uppercase tracking-wider">
-                    At minimum
+                    {t.landing.atMinimum}
                   </span>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">A Date Worth Remembering</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{t.landing.worstCaseTitle}</h3>
                   <p className="text-gray-500 leading-relaxed mb-5">
-                    Even in the best-case scenario where things don&apos;t click romantically, your preparation ensures the date is enjoyable, memorable, and respectful. No awkward silences. No missed connections.
+                    {t.landing.worstCaseDesc}
                   </p>
                   <div className="flex flex-wrap justify-center gap-2">
                     <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50/50">
-                      <Smile className="w-3 h-3 mr-1" /> Great Conversation
+                      <Smile className="w-3 h-3 mr-1" /> {t.landing.greatConversation}
                     </Badge>
                     <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50/50">
-                      <CupSoda className="w-3 h-3 mr-1" /> Fun Experience
+                      <CupSoda className="w-3 h-3 mr-1" /> {t.landing.funExperience}
                     </Badge>
                     <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50/50">
-                      <Handshake className="w-3 h-3 mr-1" /> No Regrets
+                      <Handshake className="w-3 h-3 mr-1" /> {t.landing.noRegrets}
                     </Badge>
                   </div>
                 </CardContent>
@@ -324,25 +321,25 @@ export default function LandingView() {
                   </div>
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
                     <Badge className="bg-gradient-to-r from-rose-500 to-pink-600 text-white border-0 px-3 py-0.5">
-                      <Gem className="w-3 h-3 mr-1" /> Best Case
+                      <Gem className="w-3 h-3 mr-1" /> {t.landing.bestCaseBadge}
                     </Badge>
                   </div>
                   <span className="inline-block text-xs font-bold text-rose-500 bg-rose-100 px-3 py-1 rounded-full mb-4 uppercase tracking-wider">
-                    The dream outcome
+                    {t.landing.dreamOutcome}
                   </span>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">They Become Your Partner</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{t.landing.bestCaseTitle}</h3>
                   <p className="text-gray-600 leading-relaxed mb-5">
-                    With the right preparation, genuine connection, and confidence — your date sees the real, best version of you. That&apos;s how first dates become &quot;how we met&quot; stories.
+                    {t.landing.bestCaseDesc}
                   </p>
                   <div className="flex flex-wrap justify-center gap-2">
                     <Badge className="bg-rose-100 text-rose-700 border-rose-200">
-                      <Heart className="w-3 h-3 mr-1" /> Real Connection
+                      <Heart className="w-3 h-3 mr-1" /> {t.landing.realConnection}
                     </Badge>
                     <Badge className="bg-pink-100 text-pink-700 border-pink-200">
-                      <Trophy className="w-3 h-3 mr-1" /> Found The One
+                      <Trophy className="w-3 h-3 mr-1" /> {t.landing.foundTheOne}
                     </Badge>
                     <Badge className="bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200">
-                      <Sparkles className="w-3 h-3 mr-1" /> Love Story
+                      <Sparkles className="w-3 h-3 mr-1" /> {t.landing.loveStory}
                     </Badge>
                   </div>
                 </CardContent>
@@ -363,21 +360,21 @@ export default function LandingView() {
                     <Target className="w-8 h-8 text-rose-500" />
                   </div>
                   <span className="inline-block text-xs font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full mb-4 uppercase tracking-wider">
-                    Our role
+                    {t.landing.ourRole}
                   </span>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Preparation &amp; Execution</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{t.landing.ourRoleTitle}</h3>
                   <p className="text-gray-500 leading-relaxed mb-5">
-                    We don&apos;t guarantee love — nobody can. But we guarantee you&apos;ll walk into every date prepared, confident, and ready to put your best foot forward. The rest is up to you.
+                    {t.landing.ourRoleDesc}
                   </p>
                   <div className="flex flex-wrap justify-center gap-2">
                     <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50/50">
-                      <Compass className="w-3 h-3 mr-1" /> Compatibility
+                      <Compass className="w-3 h-3 mr-1" /> {t.landing.compatibility}
                     </Badge>
                     <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50/50">
-                      <MessageCircleHeart className="w-3 h-3 mr-1" /> Conversation
+                      <MessageCircleHeart className="w-3 h-3 mr-1" /> {t.landing.conversation}
                     </Badge>
                     <Badge variant="outline" className="text-rose-600 border-rose-200 bg-rose-50/50">
-                      <Zap className="w-3 h-3 mr-1" /> Confidence
+                      <Zap className="w-3 h-3 mr-1" /> {t.landing.confidence}
                     </Badge>
                   </div>
                 </CardContent>
@@ -398,10 +395,10 @@ export default function LandingView() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Everything you need for a great date
+              {t.landing.featuresTitle}
             </h2>
             <p className="text-gray-500 text-lg max-w-xl mx-auto">
-              Three powerful AI features working together to prepare you for meaningful connections
+              {t.landing.featuresSubtitle}
             </p>
           </motion.div>
 
@@ -417,14 +414,14 @@ export default function LandingView() {
                   <div className="w-14 h-14 bg-gradient-to-br from-rose-100 to-pink-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
                     <Compass className="w-7 h-7 text-rose-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Compatibility Analysis</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{t.landing.feature1Title}</h3>
                   <p className="text-gray-500 leading-relaxed mb-4">
-                    Get deep insights into your compatibility score, alignment areas, and potential friction points before you meet.
+                    {t.landing.feature1Desc}
                   </p>
                   <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-400">
-                    <span className="flex items-center gap-1"><Check className="w-3 h-3 text-rose-400" /> Score</span>
-                    <span className="flex items-center gap-1"><Check className="w-3 h-3 text-rose-400" /> Values</span>
-                    <span className="flex items-center gap-1"><Check className="w-3 h-3 text-rose-400" /> Red Flags</span>
+                    <span className="flex items-center gap-1"><Check className="w-3 h-3 text-rose-400" /> {t.landing.feature1Score}</span>
+                    <span className="flex items-center gap-1"><Check className="w-3 h-3 text-rose-400" /> {t.landing.feature1Values}</span>
+                    <span className="flex items-center gap-1"><Check className="w-3 h-3 text-rose-400" /> {t.landing.feature1RedFlags}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -441,14 +438,14 @@ export default function LandingView() {
                   <div className="w-14 h-14 bg-gradient-to-br from-orange-100 to-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
                     <Heart className="w-7 h-7 text-orange-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Smart Date Planner</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{t.landing.feature2Title}</h3>
                   <p className="text-gray-500 leading-relaxed mb-4">
-                    AI-generated venue suggestions, timing recommendations, outfit advice, and budget estimates tailored to your date.
+                    {t.landing.feature2Desc}
                   </p>
                   <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-400">
-                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-orange-400" /> Venues</span>
-                    <span className="flex items-center gap-1"><Shirt className="w-3 h-3 text-orange-400" /> Outfits</span>
-                    <span className="flex items-center gap-1"><CupSoda className="w-3 h-3 text-orange-400" /> Budget</span>
+                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-orange-400" /> {t.landing.feature2Venues}</span>
+                    <span className="flex items-center gap-1"><Shirt className="w-3 h-3 text-orange-400" /> {t.landing.feature2Outfits}</span>
+                    <span className="flex items-center gap-1"><CupSoda className="w-3 h-3 text-orange-400" /> {t.landing.feature2Budget}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -465,14 +462,14 @@ export default function LandingView() {
                   <div className="w-14 h-14 bg-gradient-to-br from-pink-100 to-fuchsia-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
                     <MessageCircleHeart className="w-7 h-7 text-pink-600" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">Conversation Guide</h3>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-3">{t.landing.feature3Title}</h3>
                   <p className="text-gray-500 leading-relaxed mb-4">
-                    Never run out of things to say. Get personalized icebreakers, deep starters, and steering cues for natural conversations.
+                    {t.landing.feature3Desc}
                   </p>
                   <div className="flex flex-wrap justify-center gap-2 text-xs text-gray-400">
-                    <span className="flex items-center gap-1"><Sparkles className="w-3 h-3 text-pink-400" /> Icebreakers</span>
-                    <span className="flex items-center gap-1"><MessageCircleHeart className="w-3 h-3 text-pink-400" /> Deep Talk</span>
-                    <span className="flex items-center gap-1"><Smile className="w-3 h-3 text-pink-400" /> Humor</span>
+                    <span className="flex items-center gap-1"><Sparkles className="w-3 h-3 text-pink-400" /> {t.landing.feature3Icebreakers}</span>
+                    <span className="flex items-center gap-1"><MessageCircleHeart className="w-3 h-3 text-pink-400" /> {t.landing.feature3DeepTalk}</span>
+                    <span className="flex items-center gap-1"><Smile className="w-3 h-3 text-pink-400" /> {t.landing.feature3Humor}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -492,10 +489,10 @@ export default function LandingView() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              How it works
+              {t.landing.howItWorksTitle}
             </h2>
             <p className="text-gray-500 text-lg max-w-xl mx-auto">
-              Three simple steps to a more confident dating life
+              {t.landing.howItWorksSubtitle}
             </p>
           </motion.div>
 
@@ -504,27 +501,27 @@ export default function LandingView() {
               {
                 step: '01',
                 icon: UserPlus,
-                title: 'Build Your Profile',
-                description: 'Tell us about yourself — your personality, interests, dating style, and what you\'re looking for.',
-                details: ['Personality traits', 'Interests & hobbies', 'Dating goals'],
+                title: t.landing.step1Title,
+                description: t.landing.step1Desc,
+                details: [t.landing.step1Detail1, t.landing.step1Detail2, t.landing.step1Detail3],
                 color: 'from-rose-500 to-pink-500',
                 bg: 'bg-rose-50',
               },
               {
                 step: '02',
                 icon: Zap,
-                title: 'Plan Your Date',
-                description: 'Enter your date\'s details and get AI-powered compatibility analysis and a personalized date plan.',
-                details: ['Compatibility score', 'Venue & outfit', 'Timing & budget'],
+                title: t.landing.step2Title,
+                description: t.landing.step2Desc,
+                details: [t.landing.step2Detail1, t.landing.step2Detail2, t.landing.step2Detail3],
                 color: 'from-orange-500 to-amber-500',
                 bg: 'bg-orange-50',
               },
               {
                 step: '03',
                 icon: MessageCircleHeart,
-                title: 'Get Talking Points',
-                description: 'Receive tailored conversation starters, icebreakers, and tips to keep the conversation flowing naturally.',
-                details: ['Icebreakers', 'Deep topics', 'Fun stories to share'],
+                title: t.landing.step3Title,
+                description: t.landing.step3Desc,
+                details: [t.landing.step3Detail1, t.landing.step3Detail2, t.landing.step3Detail3],
                 color: 'from-pink-500 to-fuchsia-500',
                 bg: 'bg-pink-50',
               },
@@ -575,36 +572,18 @@ export default function LandingView() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              What our users say
+              {t.landing.testimonialsTitle}
             </h2>
             <p className="text-gray-500 text-lg max-w-xl mx-auto">
-              Real stories from people who dated smarter
+              {t.landing.testimonialsSubtitle}
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {[
-              {
-                name: 'Rahul',
-                location: 'Mumbai',
-                text: 'I used to be terrible at first dates — awkward silences, wrong venues, the whole deal. DateWise literally gave me a game plan. My last date? She said it was the best first date she ever had.',
-                stars: 5,
-                icon: '🔥',
-              },
-              {
-                name: 'Sarah',
-                location: 'London',
-                text: 'The talking points feature is genius. It didn\'t feel scripted at all — more like someone reminded me of interesting things about myself that I could share naturally.',
-                stars: 5,
-                icon: '💕',
-              },
-              {
-                name: 'James',
-                location: 'Toronto',
-                text: 'We\'ve been together 6 months now. I still have the compatibility report DateWise gave me — it was spot on about our shared values. This app gave me the confidence to show up as my best self.',
-                stars: 5,
-                icon: '💍',
-              },
+              { name: 'Rahul', location: 'Mumbai', text: 'I used to be terrible at first dates — awkward silences, wrong venues, the whole deal. DateWise literally gave me a game plan. My last date? She said it was the best first date she ever had.', stars: 5, icon: '🔥' },
+              { name: 'Sarah', location: 'London', text: 'The talking points feature is genius. It didn\'t feel scripted at all — more like someone reminded me of interesting things about myself that I could share naturally.', stars: 5, icon: '💕' },
+              { name: 'James', location: 'Toronto', text: 'We\'ve been together 6 months now. I still have the compatibility report DateWise gave me — it was spot on about our shared values. This app gave me the confidence to show up as my best self.', stars: 5, icon: '💍' },
             ].map((testimonial, i) => (
               <motion.div
                 key={testimonial.name}
@@ -654,10 +633,10 @@ export default function LandingView() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Simple, transparent pricing
+              {t.landing.pricingTitle}
             </h2>
             <p className="text-gray-500 text-lg max-w-xl mx-auto">
-              Start free and upgrade when you&apos;re ready for more
+              {t.landing.pricingSubtitle}
             </p>
           </motion.div>
 
@@ -677,24 +656,20 @@ export default function LandingView() {
                   </div>
                   <div className="flex items-baseline gap-1 mb-1">
                     <span className="text-4xl font-bold text-gray-900">{formatPrice(0, userCurrency)}</span>
-                    <span className="text-gray-500">/month</span>
+                    <span className="text-gray-500">{t.landing.perMonth}</span>
                   </div>
-                  <p className="text-sm text-gray-500 mb-6">Perfect for getting started</p>
+                  <p className="text-sm text-gray-500 mb-6">{t.landing.freeTierDesc}</p>
 
                   <Button
                     onClick={handleGetStarted}
                     variant="outline"
                     className="w-full rounded-full mb-6"
                   >
-                    Start Free
+                    {t.landing.freeTierBtn}
                   </Button>
 
                   <ul className="space-y-3">
-                    {[
-                      '1 date per month',
-                      'Basic compatibility score',
-                      'Simple date plan',
-                    ].map((feature) => (
+                    {[t.landing.freeFeature1, t.landing.freeFeature2, t.landing.freeFeature3].map((feature) => (
                       <li key={feature} className="flex items-center gap-2 text-sm text-gray-600">
                         <Check className="w-4 h-4 text-rose-500 shrink-0" />
                         {feature}
@@ -715,7 +690,7 @@ export default function LandingView() {
               <Card className="h-full border-2 border-rose-500 relative shadow-xl shadow-rose-100/50 py-8">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className="bg-gradient-to-r from-rose-500 to-pink-600 text-white border-0 px-3 py-0.5">
-                    <Star className="w-3 h-3 mr-1" /> Most Popular
+                    <Star className="w-3 h-3 mr-1" /> {t.landing.mostPopular}
                   </Badge>
                 </div>
                 <CardContent className="px-6">
@@ -725,25 +700,19 @@ export default function LandingView() {
                   </div>
                   <div className="flex items-baseline gap-1 mb-1">
                     <span className="text-4xl font-bold text-gray-900">{formatPrice(9.99, userCurrency)}</span>
-                    <span className="text-gray-500">/month</span>
+                    <span className="text-gray-500">{t.landing.perMonth}</span>
                   </div>
-                  <p className="text-sm text-gray-500 mb-6">For serious daters</p>
+                  <p className="text-sm text-gray-500 mb-6">{t.landing.proTierDesc}</p>
 
                   <Button
                     onClick={() => handleUpgrade('pro')}
                     className="w-full rounded-full mb-6 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white"
                   >
-                    Get Pro — {formatPrice(9.99, userCurrency)}/mo
+                    {t.landing.proTierBtn} — {formatPrice(9.99, userCurrency)}/mo
                   </Button>
 
                   <ul className="space-y-3">
-                    {[
-                      'Unlimited dates',
-                      'Full compatibility analysis',
-                      'Personalized date plans',
-                      'Conversation guides',
-                      'Post-date debrief AI',
-                    ].map((feature) => (
+                    {[t.landing.proFeature1, t.landing.proFeature2, t.landing.proFeature3, t.landing.proFeature4, t.landing.proFeature5].map((feature) => (
                       <li key={feature} className="flex items-center gap-2 text-sm text-gray-600">
                         <Check className="w-4 h-4 text-rose-500 shrink-0" />
                         {feature}
@@ -769,26 +738,20 @@ export default function LandingView() {
                   </div>
                   <div className="flex items-baseline gap-1 mb-1">
                     <span className="text-4xl font-bold text-gray-900">{formatPrice(19.99, userCurrency)}</span>
-                    <span className="text-gray-500">/month</span>
+                    <span className="text-gray-500">{t.landing.perMonth}</span>
                   </div>
-                  <p className="text-sm text-gray-500 mb-6">All-access dating companion</p>
+                  <p className="text-sm text-gray-500 mb-6">{t.landing.vipTierDesc}</p>
 
                   <Button
                     onClick={() => handleUpgrade('vip')}
                     variant="outline"
                     className="w-full rounded-full mb-6"
                   >
-                    Get VIP — {formatPrice(19.99, userCurrency)}/mo
+                    {t.landing.vipTierBtn} — {formatPrice(19.99, userCurrency)}/mo
                   </Button>
 
                   <ul className="space-y-3">
-                    {[
-                      'Everything in Pro',
-                      'Advanced personality matching',
-                      'Weekly dating strategy sessions',
-                      'Priority AI analysis',
-                      'Relationship coaching',
-                    ].map((feature) => (
+                    {[t.landing.vipFeature1, t.landing.vipFeature2, t.landing.vipFeature3, t.landing.vipFeature4, t.landing.vipFeature5].map((feature) => (
                       <li key={feature} className="flex items-center gap-2 text-sm text-gray-600">
                         <Check className="w-4 h-4 text-rose-500 shrink-0" />
                         {feature}
@@ -816,15 +779,14 @@ export default function LandingView() {
             <Heart className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-            Your next date could change everything.
+            {t.landing.ctaTitle}
           </h2>
           <p className="text-rose-100 text-lg mb-4 max-w-xl mx-auto">
-            Walk in prepared. Walk out with a connection. At the very least, you&apos;ll have a great story to tell.
-            At best? You&apos;ll be telling it together.
+            {t.landing.ctaSubtitle}
           </p>
           <p className="text-white/80 text-sm mb-8 flex items-center justify-center gap-2">
             <ShieldCheck className="w-4 h-4" />
-            Worst case: a memorable date. Best case: a partner for life.
+            {t.landing.ctaSubtext}
           </p>
           <Button
             size="lg"
@@ -832,7 +794,7 @@ export default function LandingView() {
             className="bg-white text-rose-600 hover:bg-rose-50 shadow-lg text-base px-8 h-12 rounded-full font-semibold"
           >
             <Heart className="mr-2 w-4 h-4" />
-            Start Your Journey
+            {t.landing.ctaButton}
             <ArrowRight className="ml-2 w-4 h-4" />
           </Button>
         </div>
@@ -847,7 +809,7 @@ export default function LandingView() {
               <span className="font-bold text-gray-900">DateWise</span>
             </div>
             <p className="text-sm text-gray-500 text-center">
-              &copy; {new Date().getFullYear()} DateWise AI. Making real connections, one date at a time.
+              {t.landing.footerText.replace('{year}', new Date().getFullYear().toString())}
             </p>
             <div className="flex items-center gap-3 text-gray-400">
               <Heart className="w-4 h-4 hover:text-rose-500 cursor-pointer transition-colors" />

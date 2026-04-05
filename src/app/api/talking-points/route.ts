@@ -6,7 +6,7 @@ import { getAuthUser } from '@/lib/auth'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { dateId, userProfile, dateInfo, compatibility } = body
+    const { dateId, userProfile, dateInfo, compatibility, lang } = body
 
     // Verify date ownership
     const date = await db.date.findUnique({ where: { id: dateId } })
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   "steeringCues": ["<steering cue 1>", "<steering cue 2>", ...]
 }
 
-Provide 4-6 items for each array. Make icebreakers casual and natural. Make deep starters thoughtful but not heavy. Humor suggestions should match the user's style. Steering cues help navigate tricky moments.`
+Provide 4-6 items for each array. Make icebreakers casual and natural. Make deep starters thoughtful but not heavy. Humor suggestions should match the user's style. Steering cues help navigate tricky moments.${lang && lang !== 'en' ? ` IMPORTANT: Respond entirely in ${lang}. All JSON values must be in ${lang}.` : ''}`
 
     const userPrompt = `Generate talking points for a date:
 
@@ -53,7 +53,7 @@ COMPATIBILITY:
 - Topics to Avoid: ${compatibility.topicsToAvoid?.join(', ')}
 - Conversation Steer: ${compatibility.conversationSteer?.join(', ')}
 
-Generate personalized talking points that feel natural and authentic.`
+Generate personalized talking points that feel natural and authentic.${lang && lang !== 'en' ? ` Respond entirely in ${lang}. All JSON values should be in ${lang}.` : ''}`
 
     const completion = await zai.chat.completions.create({
       messages: [

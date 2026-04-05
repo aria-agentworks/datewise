@@ -6,7 +6,7 @@ import { getAuthUser } from '@/lib/auth'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { dateId, dateData, rating, whatWentWell, whatWasAwkward, surprises } = body
+    const { dateId, dateData, rating, whatWentWell, whatWasAwkward, surprises, lang } = body
 
     // Verify date ownership
     const date = await db.date.findUnique({ where: { id: dateId } })
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
   "followUpMessage": "<a suggested follow-up message to send to the date, tailored to the situation>"
 }
 
-Be empathetic but honest. Provide genuinely helpful insights. The follow-up message should feel authentic and not generic.`
+Be empathetic but honest. Provide genuinely helpful insights. The follow-up message should feel authentic and not generic.${lang && lang !== 'en' ? ` IMPORTANT: Respond entirely in ${lang}. All JSON values (analysis, recommendation, followUpMessage) must be in ${lang}.` : ''}`
 
     const userPrompt = `Analyze this post-date debrief:
 
@@ -44,7 +44,7 @@ USER'S FEEDBACK:
 - What was awkward: ${whatWasAwkward}
 - Surprises: ${surprises}
 
-Provide an insightful analysis and practical advice.`
+Provide an insightful analysis and practical advice.${lang && lang !== 'en' ? ` Respond entirely in ${lang}. All JSON values should be in ${lang}.` : ''}`
 
     const completion = await zai.chat.completions.create({
       messages: [

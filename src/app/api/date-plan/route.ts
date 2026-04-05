@@ -6,7 +6,7 @@ import { getAuthUser } from '@/lib/auth'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { dateId, userProfile, dateInfo, compatibility } = body
+    const { dateId, userProfile, dateInfo, compatibility, lang } = body
 
     // Verify date ownership
     const date = await db.date.findUnique({ where: { id: dateId } })
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   "activitySuggestions": ["<suggestion 1>", "<suggestion 2>", ...]
 }
 
-Be specific, creative, and practical. Consider the budget preferences, setting preferences, and compatibility insights.`
+Be specific, creative, and practical. Consider the budget preferences, setting preferences, and compatibility insights.${lang && lang !== 'en' ? ` IMPORTANT: Respond entirely in ${lang}. All JSON values must be in ${lang}.` : ''}`
 
     const userPrompt = `Create a date plan for:
 
@@ -56,7 +56,7 @@ COMPATIBILITY INSIGHTS:
 - Alignment Areas: ${compatibility.alignmentAreas?.join(', ')}
 - Friction Points: ${compatibility.frictionPoints?.join(', ')}
 
-Create a perfect date plan considering these factors.`
+Create a perfect date plan considering these factors.${lang && lang !== 'en' ? ` Respond entirely in ${lang}. All JSON values should be in ${lang}.` : ''}`
 
     const completion = await zai.chat.completions.create({
       messages: [

@@ -1,6 +1,9 @@
 'use client'
 
 import { useAppStore } from '@/lib/store'
+import { useTranslation } from '@/lib/i18n'
+import { I18nProvider } from '@/lib/i18n'
+import { LanguageSelector, MobileLanguageSelector } from '@/components/LanguageSelector'
 import LandingView from '@/components/views/LandingView'
 import ProfileBuilderView from '@/components/views/ProfileBuilderView'
 import NewDateView from '@/components/views/NewDateView'
@@ -11,10 +14,11 @@ import { Home as HomeIcon, LayoutDashboard, PlusCircle } from 'lucide-react'
 import { SignIn, SignUp, useUser, UserButton } from '@clerk/nextjs'
 import { useEffect } from 'react'
 
-export default function Home() {
+function AppContent() {
   const currentView = useAppStore((s) => s.currentView)
   const setView = useAppStore((s) => s.setView)
   const { isSignedIn, isLoaded } = useUser()
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (isLoaded && isSignedIn && (currentView === 'signIn' || currentView === 'signUp')) {
@@ -32,7 +36,7 @@ export default function Home() {
           <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
             <span className="text-2xl font-bold text-white">DW</span>
           </div>
-          <p className="text-gray-400 text-sm">Loading...</p>
+          <p className="text-gray-400 text-sm">{t.nav.loading}</p>
         </div>
       </div>
     )
@@ -51,22 +55,23 @@ export default function Home() {
             </button>
             <div className="flex items-center gap-2">
               <UserButton afterSignOutUrl="/" />
+              <LanguageSelector />
               <div className="flex items-center gap-1">
                 <NavButton
                   icon={<HomeIcon className="w-4 h-4" />}
-                  label="Home"
+                  label={t.nav.home}
                   active={currentView === 'landing' || currentView === 'profile'}
                   onClick={() => setView('landing')}
                 />
                 <NavButton
                   icon={<LayoutDashboard className="w-4 h-4" />}
-                  label="Dashboard"
+                  label={t.nav.dashboard}
                   active={currentView === 'dashboard' || currentView === 'dateDetail'}
                   onClick={() => setView('dashboard')}
                 />
                 <NavButton
                   icon={<PlusCircle className="w-4 h-4" />}
-                  label="New Date"
+                  label={t.nav.newDate}
                   active={currentView === 'newDate'}
                   onClick={() => setView('newDate')}
                 />
@@ -90,13 +95,13 @@ export default function Home() {
             <div className="w-full max-w-md">
               <div className="text-center mb-6">
                 <button onClick={() => setView('landing')} className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm">
-                  Back to Home
+                  {t.auth.backToHome}
                 </button>
                 <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mt-4 mb-4">
                   <span className="text-2xl font-bold text-white">DW</span>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
-                <p className="text-gray-500 mt-1">Sign in to continue your dating journey</p>
+                <h2 className="text-2xl font-bold text-gray-900">{t.auth.welcomeBack}</h2>
+                <p className="text-gray-500 mt-1">{t.auth.signInSubtitle}</p>
               </div>
               <SignIn />
             </div>
@@ -108,13 +113,13 @@ export default function Home() {
             <div className="w-full max-w-md">
               <div className="text-center mb-6">
                 <button onClick={() => setView('landing')} className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 text-sm">
-                  Back to Home
+                  {t.auth.backToHome}
                 </button>
                 <div className="w-16 h-16 bg-gradient-to-br from-rose-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mt-4 mb-4">
                   <span className="text-2xl font-bold text-white">DW</span>
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">Create Account</h2>
-                <p className="text-gray-500 mt-1">Join DateWise and start dating smarter</p>
+                <h2 className="text-2xl font-bold text-gray-900">{t.auth.createAccount}</h2>
+                <p className="text-gray-500 mt-1">{t.auth.signUpSubtitle}</p>
               </div>
               <SignUp />
             </div>
@@ -127,19 +132,20 @@ export default function Home() {
           <div className="flex items-center justify-around">
             <MobileNavButton
               icon={<HomeIcon className="w-5 h-5" />}
-              label="Home"
+              label={t.nav.home}
               active={currentView === 'landing' || currentView === 'profile'}
               onClick={() => setView('landing')}
             />
+            <MobileLanguageSelector />
             <MobileNavButton
               icon={<LayoutDashboard className="w-5 h-5" />}
-              label="Dashboard"
+              label={t.nav.dashboard}
               active={currentView === 'dashboard' || currentView === 'dateDetail'}
               onClick={() => setView('dashboard')}
             />
             <MobileNavButton
               icon={<PlusCircle className="w-5 h-5" />}
-              label="New Date"
+              label={t.nav.newDate}
               active={currentView === 'newDate'}
               onClick={() => setView('newDate')}
               highlight
@@ -148,6 +154,14 @@ export default function Home() {
         </nav>
       )}
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <I18nProvider>
+      <AppContent />
+    </I18nProvider>
   )
 }
 
