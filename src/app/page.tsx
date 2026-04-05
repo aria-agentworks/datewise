@@ -7,7 +7,7 @@ import NewDateView from '@/components/views/NewDateView'
 import DashboardView from '@/components/views/DashboardView'
 import DateDetailView from '@/components/views/DateDetailView'
 import DebriefView from '@/components/views/DebriefView'
-import { Home, LayoutDashboard, PlusCircle } from 'lucide-react'
+import { Home as HomeIcon, LayoutDashboard, PlusCircle } from 'lucide-react'
 
 export default function Home() {
   const currentView = useAppStore((s) => s.currentView)
@@ -29,7 +29,7 @@ export default function Home() {
             </button>
             <div className="flex items-center gap-1">
               <NavButton
-                icon={<Home className="w-4 h-4" />}
+                icon={<HomeIcon className="w-4 h-4" />}
                 label="Home"
                 active={currentView === 'landing' || currentView === 'profile'}
                 onClick={() => setView('landing')}
@@ -67,7 +67,7 @@ export default function Home() {
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-t px-2 py-2 safe-area-bottom">
           <div className="flex items-center justify-around">
             <MobileNavButton
-              icon={<Home className="w-5 h-5" />}
+              icon={<HomeIcon className="w-5 h-5" />}
               label="Home"
               active={currentView === 'landing' || currentView === 'profile'}
               onClick={() => setView('landing')}
