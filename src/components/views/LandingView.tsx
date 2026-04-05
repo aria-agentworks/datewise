@@ -2,6 +2,7 @@
 
 import { useAppStore } from '@/lib/store'
 import { useTranslation } from '@/lib/i18n'
+import { LanguageSelector, MobileLanguageSelector } from '@/components/LanguageSelector'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -30,6 +31,7 @@ import {
   Gem,
   Handshake,
   LogIn,
+  Globe,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
@@ -141,6 +143,17 @@ export default function LandingView() {
 
   return (
     <div className="view-enter min-h-screen">
+      {/* Landing Page Language Bar */}
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 sm:px-6 py-2.5 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <button
+          onClick={() => setView('landing')}
+          className="text-lg font-bold bg-gradient-to-r from-rose-500 to-pink-600 bg-clip-text text-transparent"
+        >
+          DateWise
+        </button>
+        <LanguageSelector />
+      </div>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50" />
@@ -170,7 +183,7 @@ export default function LandingView() {
           <Trophy className="w-7 h-7 text-amber-400" />
         </div>
 
-        <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-20 pb-24 sm:pt-28 sm:pb-32 text-center">
+        <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 pt-28 pb-24 sm:pt-36 sm:pb-32 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -180,6 +193,13 @@ export default function LandingView() {
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />
               {t.landing.heroBadge}
             </Badge>
+
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <Badge variant="outline" className="px-3 py-1 text-xs border-gray-200 text-gray-500 bg-white">
+                <Globe className="w-3 h-3 mr-1" />
+                English, Espanol, Deutsch, Francais, Portugues
+              </Badge>
+            </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 mb-6">
               {t.landing.heroTitle1}{' '}
