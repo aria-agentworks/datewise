@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model UserProfile {
+  id                    String   @id @default(cuid())
+  name                  String
+  gender                String   @default("preferNotToSay") // male/female/nonBinary/preferNotToSay
+  age                   Int?
+  height                String?
+  bodyType              String   @default("average") // slim/average/athletic/plusSize
+  communicationStyle    String   @default("thoughtful") // direct/playful/introverted/thoughtful
+  humorStyle            String   @default("warm") // sarcastic/witty/warm/dry
+  loveLanguage          String   @default("qualityTime") // words/acts/qualityTime/gifts
+  dealBreakers          String   @default("")
+  interests             String   @default("")
+  datingGoals           String   @default("notSure") // casual/relationship/marriage/notSure
+  budgetRange           String   @default("moderate") // budget/moderate/premium
+  preferredDateSetting  String   @default("coffee") // quietRestaurant/activity/outdoors/coffee/casual
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model Date {
+  id             String   @id @default(cuid())
+  userId         String
+  dateWithName   String
+  datePlatform   String   @default("")
+  dateBioText    String   @default("")
+  occasionType   String   @default("firstDate")
+  dateNumber     Int      @default(1)
+  location       String   @default("")
+  status         String   @default("planned") // planned/completed/cancelled
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CompatibilityReport {
+  id              String   @id @default(cuid())
+  dateId          String
+  score           Int
+  alignmentAreas  String   @default("")
+  frictionPoints  String   @default("")
+  talkingPoints   String   @default("")
+  topicsToAvoid   String   @default("")
+  compliments     String   @default("")
+  conversationSteer String @default("")
+  createdAt       DateTime @default(now())
+}
+
+model DatePlan {
+  id               String   @id @default(cuid())
+  dateId           String
+  venueName        String
+  venueDescription String
+  timingSuggestion String
+  outfitDescription String
+  budgetEstimate   String
+  createdAt        DateTime @default(now())
+}
+
+model PostDateDebrief {
+  id              String   @id @default(cuid())
+  dateId          String
+  rating          Int
+  whatWentWell    String   @default("")
+  whatWasAwkward  String   @default("")
+  surprises       String   @default("")
+  aiAnalysis      String   @default("")
+  followUpMessage String   @default("")
+  createdAt       DateTime @default(now())
+}
