@@ -13,9 +13,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Payment system is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in .env' }, { status: 503 })
     }
 
-    const { plan } = await request.json()
+    const { plan, currency: userCurrency } = await request.json()
 
-    const prices: Record<string, number> = { pro: 29900, vip: 59900 }
+    // Multi-currency pricing — Razorpay handles FX automatically
+    // All amounts are in the smallest currency unit (cents for USD, paise for INR, etc.)
+    const pricing: Record<string, Record<string, { amount: number; currency: string }>> = {
+      pro: {
+        USD: { amount: 999, currency: 'USD' },   // $9.99
+        EUR: { amount: 999, currency: 'EUR' },   // €9.99
+        GBP: { amount: 799, currency: 'GBP' },   // £7.99
+        INR: { amount: 29900, currency: 'INR' }, // ₹299
+        AUD: { amount: 1499, currency: 'AUD' },  // A$14.99
+        CAD: { amount: 1399, currency: 'CAD' },  // C$13.99
+      },
+      vip: {
+        USD: { amount: 1999, currency: 'USD' },   // $19.99
+        EUR: { amount: 1999, currency: 'EUR' },   // €19.99
+        GBP: { amount: 1599, currency: 'GBP' },   // £15.99
+        INR: { amount: 59900, currency: 'INR' },  // ₹599
+        AUD: { amount: 2999, currency: 'AUD' },   // A$29.99
+        CAD: { amount: 2799, currency: 'CAD' },   // C$27.99
+      },
+    }
+
+    // Default to USD if no currency or unsupported currency provided
+    const planPricing = pricing[plan] || pricing.pro
+    const priceConfig = planPricing[userCurrency?.toUpperCase()] || planPricing.USD
 
     const razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
@@ -23,10 +46,10 @@ export async function POST(request: Request) {
     })
 
     const order = await razorpay.orders.create({
-      amount: prices[plan] || prices.pro,
-      currency: 'INR',
+      amount: priceConfig.amount,
+      currency: priceConfig.currency,
       receipt: `datewise_${userId}_${plan}_${Date.now()}`,
-      notes: { userId, plan },
+      notes: { userId, plan, currency: priceConfig.currency },
     })
 
     return NextResponse.json({
@@ -34,7 +57,7 @@ export async function POST(request: Request) {
       amount: order.amount,
       currency: order.currency,
       key: process.env.RAZORPAY_KEY_ID,
-      plan
+      plan,
     })
   } catch (error) {
     console.error('Razorpay order error:', error)

@@ -61,9 +61,9 @@ export default function RootLayout({
               operatingSystem: 'Web',
               description: 'AI-powered dating preparation app',
               offers: [
-                { price: '0', priceCurrency: 'INR', name: 'Free' },
-                { price: '299', priceCurrency: 'INR', name: 'Pro' },
-                { price: '599', priceCurrency: 'INR', name: 'VIP' },
+                { price: '0', priceCurrency: 'USD', name: 'Free' },
+                { price: '9.99', priceCurrency: 'USD', name: 'Pro' },
+                { price: '19.99', priceCurrency: 'USD', name: 'VIP' },
               ],
               aggregateRating: { ratingValue: '4.8', reviewCount: '2400' },
             }),

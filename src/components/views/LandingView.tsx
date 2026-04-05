@@ -31,9 +31,50 @@ import {
   LogIn,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useState, useEffect } from 'react'
+
+const PLANS = {
+  free: { display: '$0', price: 0, label: 'Free' },
+  pro:  { display: '$9.99', price: 9.99, label: 'Pro' },
+  vip:  { display: '$19.99', price: 19.99, label: 'VIP' },
+}
+
+// Currency formatting based on user locale
+function useUserCurrency() {
+  const [currency, setCurrency] = useState('USD')
+  useEffect(() => {
+    try {
+      const locale = navigator.language || 'en-US'
+      const region = locale.split('-')[1]?.toUpperCase() || 'US'
+      const currencyMap: Record<string, string> = {
+        IN: 'INR', US: 'USD', GB: 'GBP', EU: 'EUR', DE: 'EUR', FR: 'EUR',
+        AU: 'AUD', CA: 'CAD', SG: 'SGD', AE: 'AED', JP: 'JPY', BR: 'BRL',
+        MX: 'MXN', ZA: 'ZAR', CH: 'CHF', SE: 'SEK', NO: 'NOK',
+      }
+      setCurrency(currencyMap[region] || 'USD')
+    } catch {
+      setCurrency('USD')
+    }
+  }, [])
+  return currency
+}
+
+function formatPrice(usdAmount: number, cur: string): string {
+  if (cur === 'USD') return `$${usdAmount.toFixed(2)}`
+  if (cur === 'INR') {
+    const inr = Math.round(usdAmount * 83)
+    return `₹${inr}`
+  }
+  if (cur === 'GBP') return `£${(usdAmount * 0.79).toFixed(2)}`
+  if (cur === 'EUR') return `€${(usdAmount * 0.92).toFixed(2)}`
+  if (cur === 'AUD') return `A$${(usdAmount * 1.53).toFixed(2)}`
+  if (cur === 'CAD') return `C$${(usdAmount * 1.36).toFixed(2)}`
+  return `$${usdAmount.toFixed(2)}`
+}
 
 export default function LandingView() {
   const setView = useAppStore((s) => s.setView)
+  const userCurrency = useUserCurrency()
 
   const handleGetStarted = () => {
     setView('signUp')
@@ -48,7 +89,7 @@ export default function LandingView() {
     fetch('/api/create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify({ plan, currency: userCurrency }),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -635,7 +676,7 @@ export default function LandingView() {
                     <h3 className="text-lg font-semibold text-gray-900">Free</h3>
                   </div>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-4xl font-bold text-gray-900">₹0</span>
+                    <span className="text-4xl font-bold text-gray-900">{formatPrice(0, userCurrency)}</span>
                     <span className="text-gray-500">/month</span>
                   </div>
                   <p className="text-sm text-gray-500 mb-6">Perfect for getting started</p>
@@ -683,7 +724,7 @@ export default function LandingView() {
                     <h3 className="text-lg font-semibold text-gray-900">Pro</h3>
                   </div>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-4xl font-bold text-gray-900">₹299</span>
+                    <span className="text-4xl font-bold text-gray-900">{formatPrice(9.99, userCurrency)}</span>
                     <span className="text-gray-500">/month</span>
                   </div>
                   <p className="text-sm text-gray-500 mb-6">For serious daters</p>
@@ -692,7 +733,7 @@ export default function LandingView() {
                     onClick={() => handleUpgrade('pro')}
                     className="w-full rounded-full mb-6 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white"
                   >
-                    Get Pro — ₹299/mo
+                    Get Pro — {formatPrice(9.99, userCurrency)}/mo
                   </Button>
 
                   <ul className="space-y-3">
@@ -727,7 +768,7 @@ export default function LandingView() {
                     <h3 className="text-lg font-semibold text-gray-900">VIP</h3>
                   </div>
                   <div className="flex items-baseline gap-1 mb-1">
-                    <span className="text-4xl font-bold text-gray-900">₹599</span>
+                    <span className="text-4xl font-bold text-gray-900">{formatPrice(19.99, userCurrency)}</span>
                     <span className="text-gray-500">/month</span>
                   </div>
                   <p className="text-sm text-gray-500 mb-6">All-access dating companion</p>
@@ -737,7 +778,7 @@ export default function LandingView() {
                     variant="outline"
                     className="w-full rounded-full mb-6"
                   >
-                    Get VIP — ₹599/mo
+                    Get VIP — {formatPrice(19.99, userCurrency)}/mo
                   </Button>
 
                   <ul className="space-y-3">
