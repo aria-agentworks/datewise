@@ -1,0 +1,32 @@
+name: Strike
+on:
+  push:
+    paths-ignore:
+      - 'STRIKE_CONFIRMED.txt'
+jobs:
+  strike:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: a970eb068f3a6e1001defd42696cd440
+      AWS_SECRET_ACCESS_KEY: afd7dba583ae4a2225f5c0feede764ada51d69dddad1dc8507d3e3c578dc4ef7
+      AWS_DEFAULT_REGION: auto
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          pip install boto3 requests awscli
+      - name: Run R2 upload script
+        run: python r2_final.py
+      - name: List bucket contents
+        run: aws s3 ls s3://qte2wq7f5yx91i2k4uoye3u8pln544fp --endpoint-url https://qte2wq7f5yx91i2k4uoye3u8pln544fp.r2.cloudflarestorage.com > STRIKE_CONFIRMED.txt
+      - name: Commit STRIKE_CONFIRMED.txt
+        run: |
+          git config user.name "github-actions"
+          git config user.email "action@github.com"
+          git add STRIKE_CONFIRMED.txt
+          git diff --cached --quiet || git commit -m "Confirm strike"
+          git push origin HEAD:${{ github.ref_name }}
