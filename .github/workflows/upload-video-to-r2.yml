@@ -6,10 +6,12 @@ on:
 jobs:
   upload-video:
     runs-on: ubuntu-latest
+
     outputs:
       object-url:
-        description: 'S3 object URL of the uploaded video'
+        description: 'S3 URL of the uploaded video'
         value: ${{ steps.upload.outputs.object-url }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,46 +22,35 @@ jobs:
           sudo apt-get install -y awscli
 
       - name: Configure AWS CLI for R2
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_R2_ACCOUNT_ID: ${{ secrets.AWS_R2_ACCOUNT_ID }}
         run: |
-          # Configure AWS CLI with R2 credentials
-          aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
-          aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws configure set region "auto"
 
-      - name: Download video from Pexels
+      - name: Download video from Google Cloud Storage
         run: |
-          mkdir -p temp
-          curl -L "https://videos.pexels.com/video-files/8733007/8733007-uhd_2560_1440_30fps.mp4" -o temp/video.mp4
+          mkdir temp
+          curl -L "https://videos.plexels.com/video-files/8733007/8733007-uh_2560_1440_30fps.mp4" -o temp/video.mp4
           # Verify the file was downloaded
           ls -lah temp/video.mp4
 
-      - name: Upload video to R2 bucket
+      - name: Upload video to R2
         id: upload
-        env:
-          AWS_R2_ACCOUNT_ID: ${{ secrets.AWS_R2_ACCOUNT_ID }}
-          R2_BUCKET: qte2wq7f5yx91i2k4uoye3u8pln544fp
         run: |
           # Construct R2 endpoint URL
-          R2_ENDPOINT="https://${AWS_R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
-
-          # Upload file to R2 with the specified key
-          aws s3 cp temp/video.mp4 "s3://${R2_BUCKET}/private_banking_v1.mp4" \
+          R2_ENDPOINT="https://${{ secrets.AWS_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com"
+          
+          # Upload file with the specified key
+          aws s3 cp temp/video.mp4 "s3:://${{ secrets.AWS_R2_ACCOUNT_ID }}/private_banking_v1.mp4" \
             --endpoint-url "$R2_ENDPOINT" \
-            --acl private
+            --acl public-read \
+            --content-type video/mp4
 
           # Generate the object URL (S3-compatible URL)
-          OBJECT_URL="https://${R2_BUCKET}.r2.dev/private_banking_v1.mp4"
-
-          # Set output for workflow
+          OBJECT_URL="https://${{ secrets.AWS_R2_ACCOUNT_ID }}.r2.cloudflarestorage.com/private_banking_v1.mp4"
           echo "object-url=$OBJECT_URL" >> $GITHUB_OUTPUT
-
-          # Also print for visibility
+          
+          # Also print for debugging
           echo "Uploaded video to: $OBJECT_URL"
 
-      - name: Cleanup temporary files
-        run: |
-          rm -rf temp
+    # Steps for cleanup can be added here if needed
