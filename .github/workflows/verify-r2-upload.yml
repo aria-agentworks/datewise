@@ -1,0 +1,109 @@
+name: Verify R2 Upload
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.github/workflows/verify-r2-upload.yml'
+    paths-ignore:
+      - 'r2_log.txt'
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install dependencies
+        run: pip install boto3 requests
+      - name: Upload to R2 and capture logs
+        continue-on-error: true
+        env:
+          R2_ACCESS_KEY: a970eb068f3a6e1001defd42696cd440
+          R2_SECRET_KEY: afd7dba583ae4a2225f5c0feede764ada51d69dddad1dc8507d3e3c578dc4ef7
+          R2_ENDPOINT: https://qte2wq7f5yx91i2k4uoye3u8pln544fp.r2.cloudflarestorage.com
+          R2_BUCKET: qte2wq7f5yx91i2k4uoye3u8pln544fp
+          VIDEO_URL: https://videos.pexels.com/video-files/8733007/8733007-uhd_2560_1440_30fps.mp4
+          OBJECT_KEY: pb_whale.mp4
+        run: |
+          python - <<'PY'
+import boto3, requests, os, sys, traceback
+from botocore.exceptions import ClientError
+
+R2_ACCESS_KEY = os.getenv('R2_ACCESS_KEY')
+R2_SECRET_KEY = os.getenv('R2_SECRET_KEY')
+R2_ENDPOINT = os.getenv('R2_ENDPOINT')
+R2_BUCKET = os.getenv('R2_BUCKET')
+VIDEO_URL = os.getenv('VIDEO_URL')
+OBJECT_KEY = os.getenv('OBJECT_KEY')
+local_file = '/tmp/video.mp4'
+log_lines = []
+
+def log(msg):
+    print(msg)
+    log_lines.append(str(msg))
+
+try:
+    log(f"========== R2 UPLOAD START ==========")
+    log(f"Endpoint: {R2_ENDPOINT}")
+    log(f"Bucket: {R2_BUCKET}")
+    log(f"Object Key: {OBJECT_KEY}")
+    log(f"Video URL: {VIDEO_URL}")
+    
+    # Download
+    log("Downloading video...")
+    r = requests.get(VIDEO_URL, stream=True, timeout=60)
+    r.raise_for_status()
+    with open(local_file, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=8192):
+            f.write(chunk)
+    size = os.path.getsize(local_file)
+    log(f"Download complete. Size: {size} bytes")
+except Exception as e:
+    log(f"DOWNLOAD FAILED: {type(e).__name__}: {e}")
+    log(traceback.format_exc())
+    with open('r2_log.txt', 'w') as f:
+        f.write('\n'.join(log_lines))
+    sys.exit(1)
+
+try:
+    # Upload
+    log("Initializing S3 client...")
+    s3 = boto3.client('s3',
+        endpoint_url=R2_ENDPOINT,
+        aws_access_key_id=R2_ACCESS_KEY,
+        aws_secret_access_key=R2_SECRET_KEY,
+        region_name='auto')
+    log(f"Uploading {local_file} to {R2_BUCKET}/{OBJECT_KEY}...")
+    s3.upload_file(local_file, R2_BUCKET, OBJECT_KEY, ExtraArgs={'ContentType': 'video/mp4'})
+    s3_url = f"{R2_ENDPOINT}/{OBJECT_KEY}"
+    log(f"UPLOAD SUCCESS: {s3_url}")
+except ClientError as e:
+    log(f"UPLOAD FAILED (ClientError): {e}")
+    log(f"Response: {e.response}")
+except Exception as e:
+    log(f"UPLOAD FAILED: {type(e).__name__}: {e}")
+    log(traceback.format_exc())
+finally:
+    if os.path.exists(local_file):
+        os.remove(local_file)
+        log(f"Cleaned up {local_file}")
+    log(f"========== R2 UPLOAD END ==========")
+
+with open('r2_log.txt', 'w') as f:
+    f.write('\n'.join(log_lines))
+PY
+      - name: Commit log file
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add r2_log.txt
+          git commit -m "log: R2 upload verification" || echo "No changes to commit"
+          git push
