@@ -6,7 +6,7 @@ from botocore.exceptions import NoCredentialsError
 # Hardcoded R2 credentials
 R2_ACCESS_KEY_ID = 'a970eb068f3a6e1001defd42696cd440'
 R2_SECRET_ACCESS_KEY = 'afd7dba583ae4a2225f5c0feede764ada51d69dddad1dc8507d3e3c578dc4ef7'
-R2_ENDPOINT = 'https://qte2wq7f5yx91i2k4uoye3u8pln544fp.runable.site'
+R2_ENDPOINT = 'https://qte2wq7f5yx91i2k4uoye3u8pln544fp.r2.cloudflarestorage.com'
 R2_BUCKET = 'qte2wq7f5yx91i2k4uoye3u8pln544fp'
 VIDEO_URL = 'https://videos.pexels.com/video-files/8733007/8733007-uhd_2560_1440_30fps.mp4'
 
@@ -36,10 +36,10 @@ def upload_to_r2(local_file, object_key):
             object_key,
             ExtraArgs={'ContentType': 'video/mp4'}
         )
-        print(f"Upload successful!")
+        print("Upload success!")
         s3_url = f"{R2_ENDPOINT}/{object_key}"
         print(f"S3 object key: {object_key}")
-        print(f"File accessible at: {s3_url}")
+        print(f"Generated URL: {s3_url}")
         return s3_url
     except NoCredentialsError:
         print("Credentials not available")
@@ -54,8 +54,8 @@ def main():
     try:
         download_video(VIDEO_URL, local_file)
         s3_url = upload_to_r2(local_file, object_key)
-        print(f"::set-output name=s3-key::{object_key}")
-        print(f"::set-output name=s3-url::{s3_url}")
+        print("::set-output name=key::{object_key}")
+        print("::set-output name=url::{s3_url}")
         print(f"S3 key generated: {object_key}")
         print(f"S3 URL: {s3_url}")
     finally:
