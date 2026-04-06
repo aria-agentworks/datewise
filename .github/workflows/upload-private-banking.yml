@@ -1,22 +1,17 @@
 name: Upload Private Banking Video to R2
 on:
-  workflow_dispatch:
-jobs:
-  upload:
-    runs-on: ubuntu-latest
-    outputs:
-      s3-key: ${{ steps.upload.outputs.s3-key }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-      - name: Install dependencies
-        run: |
-          pip install boto3 requests
-      - name: Upload video to R2
-        id: upload
-        run: |
-          python r2_upload.py
+  push:
+    branches: [ main ]
+steps:
+  - name: Checkout
+    uses: actions/checkout@v3
+  - name: Setup Python
+    uses: actions/setup-python@v4
+    with:
+      python-version: '3.11'
+  - name: Install dependencies
+    run: |
+      pip install boto3 requests
+  - name: Upload video to R2
+    id: upload
+    run: python r2_upload.py
